@@ -17,7 +17,10 @@ export class Particle {
         this.floatSpeed = 0.8 + Math.random() * 1.0; // 漂浮速度差异
 
         // 自转速度
-        const speedMult = (type === 'PHOTO') ? 0.3 : 2.0;
+        let speedMult = 2.0; 
+        if (type === 'PHOTO') speedMult = 0.3;
+        else if (type === 'GEM') speedMult = 8; // 宝石转得快，bling bling
+
         this.spinSpeed = new THREE.Vector3(
             (Math.random() - 0.5) * speedMult,
             (Math.random() - 0.5) * speedMult,

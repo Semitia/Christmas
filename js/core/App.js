@@ -63,7 +63,7 @@ export class App {
         this.scene.environment = pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture;
 
         // Lighting
-        const ambient = new THREE.AmbientLight(0xffffff, 0.6);
+        const ambient = new THREE.AmbientLight(0xffffff, 0.1);
         this.scene.add(ambient);
 
         const centerLight = new THREE.PointLight(0xffaa00, 2, 50);
@@ -91,6 +91,71 @@ export class App {
         
         this.composer.addPass(new OutputPass()); // Handles color space conversion
     }
+    // setupThree() {
+    //     // Renderer
+    //     this.renderer = new THREE.WebGLRenderer({ antialias: true });
+    //     this.renderer.setSize(window.innerWidth, window.innerHeight);
+    //     this.renderer.setPixelRatio(window.devicePixelRatio);
+    //     this.renderer.toneMapping = THREE.ReinhardToneMapping;
+        
+    //     // [修改] 从配置读取曝光度
+    //     this.renderer.toneMappingExposure = CONFIG.lighting.exposure;
+        
+    //     this.container.appendChild(this.renderer.domElement);
+
+    //     // Scene
+    //     this.scene = new THREE.Scene();
+    //     this.scene.background = new THREE.Color(0x000000);
+    //     this.scene.fog = new THREE.FogExp2(0x000000, 0.02);
+
+    //     this.camera = new THREE.PerspectiveCamera(50, window.innerWidth/window.innerHeight, 0.1, 200);
+    //     this.camera.position.set(0, 2, 50);
+
+    //     // [已删除] RoomEnvironment (为了宝石质感必须删除)
+
+    //     // Lighting ==========================================
+        
+    //     // 1. 环境光
+    //     const ambient = new THREE.AmbientLight(
+    //         CONFIG.lighting.ambient.color, 
+    //         CONFIG.lighting.ambient.intensity
+    //     );
+    //     this.scene.add(ambient);
+
+    //     // 2. 中心暖光
+    //     const centerLight = new THREE.PointLight(
+    //         CONFIG.lighting.center.color, 
+    //         CONFIG.lighting.center.intensity, 
+    //         CONFIG.lighting.center.distance
+    //     );
+    //     this.scene.add(centerLight);
+
+    //     // 3. 金色聚光灯 (主光)
+    //     const cfgGold = CONFIG.lighting.spotGold;
+    //     const spotGold = new THREE.SpotLight(CONFIG.colors.gold, cfgGold.intensity);
+    //     spotGold.position.set(cfgGold.x, cfgGold.y, cfgGold.z);
+    //     spotGold.angle = cfgGold.angle;
+    //     spotGold.penumbra = cfgGold.penumbra;
+    //     this.scene.add(spotGold);
+
+    //     // 4. 蓝色聚光灯 (辅光)
+    //     const cfgBlue = CONFIG.lighting.spotBlue;
+    //     const spotBlue = new THREE.SpotLight(CONFIG.colors.blueLight, cfgBlue.intensity);
+    //     spotBlue.position.set(cfgBlue.x, cfgBlue.y, cfgBlue.z);
+    //     this.scene.add(spotBlue);
+
+    //     // Post Processing (保持不变)
+    //     this.composer = new EffectComposer(this.renderer);
+    //     this.composer.addPass(new RenderPass(this.scene, this.camera));
+        
+    //     const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
+    //     bloomPass.threshold = 0.7;
+    //     bloomPass.strength = 0.45;
+    //     bloomPass.radius = 0.4;
+    //     this.composer.addPass(bloomPass);
+        
+    //     this.composer.addPass(new OutputPass());
+    // }
 
     createWorld() {
         this.mainGroup = new THREE.Group();
@@ -102,7 +167,9 @@ export class App {
         // 2. 准备几何体 (Shared Geometries)
         const boxGeo = new THREE.BoxGeometry(0.5, 0.5, 0.5);
         const sphereGeo = new THREE.SphereGeometry(0.3, 16, 16);
-        
+        const gemGeo = new THREE.OctahedronGeometry(0.3, 0);
+        const goldGeo = new THREE.IcosahedronGeometry(0.35, 0);
+
         // 拐杖糖几何体
         const curve = new THREE.CatmullRomCurve3([
             new THREE.Vector3(0, -1, 0), new THREE.Vector3(0, 0.5, 0),
@@ -124,7 +191,14 @@ export class App {
             map: AssetFactory.createCandyCaneTexture(),
             roughness: 0.3, metalness: 0.1 
         });
-
+        const gemMat = new THREE.MeshStandardMaterial({
+            // color: CONFIG.colors.ice,   // 冰蓝色
+            color: 0xffffff,
+            metalness: 0.8,             // 极高的金属感反射
+            roughness: 0.2,             // 极低的粗糙度 (参考工程是0.3，0.1会更像宝石)
+            // emissive: 0x001133,         // 微弱的深蓝自发光，增加通透感
+            // emissiveIntensity: 0.5
+        });
         // 4. [核心修改] 批量生成函数
         const createBatch = (count, geometry, material, type) => {
             for (let i = 0; i < count; i++) {
@@ -148,10 +222,11 @@ export class App {
 
         // 5. 根据配置生成各类粒子
         const counts = CONFIG.particles.counts;
-        createBatch(counts.gold, boxGeo, goldMat, 'ORNAMENT'); // 金色方块
+        createBatch(counts.gold, goldGeo, goldMat, 'ORNAMENT');
         createBatch(counts.green, boxGeo, greenMat, 'ORNAMENT'); // 绿色方块
         createBatch(counts.red, sphereGeo, redMat, 'ORNAMENT'); // 红色圆球
         createBatch(counts.cane, caneGeo, caneMat, 'CANE');     // 拐杖糖
+        createBatch(counts.gem, gemGeo, gemMat, 'GEM');
 
         // 6. 创建灰尘 (Dust Particles) - 保持原逻辑
         const dustGeo = new THREE.BufferGeometry();

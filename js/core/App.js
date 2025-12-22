@@ -95,53 +95,67 @@ export class App {
         this.mainGroup = new THREE.Group();
         this.scene.add(this.mainGroup);
 
-        // Shared Geometries & Materials
+        // 1. 创建星星 (保持之前的封装)
+        this.createStar();
+
+        // 2. 准备几何体 (Shared Geometries)
         const boxGeo = new THREE.BoxGeometry(0.5, 0.5, 0.5);
         const sphereGeo = new THREE.SphereGeometry(0.3, 16, 16);
         
-        // Candy Cane Geometry (Tube)
+        // 拐杖糖几何体
         const curve = new THREE.CatmullRomCurve3([
-            new THREE.Vector3(0, -1, 0),
-            new THREE.Vector3(0, 0.5, 0),
-            new THREE.Vector3(0.2, 0.8, 0),
-            new THREE.Vector3(0.5, 0.6, 0)
+            new THREE.Vector3(0, -1, 0), new THREE.Vector3(0, 0.5, 0),
+            new THREE.Vector3(0.2, 0.8, 0), new THREE.Vector3(0.5, 0.6, 0)
         ]);
         const caneGeo = new THREE.TubeGeometry(curve, 20, 0.1, 8, false);
+
+        // 3. 准备材质 (Materials) - 拆分为独立变量
+        const goldMat = new THREE.MeshStandardMaterial({ 
+            color: CONFIG.colors.gold, metalness: 0.8, roughness: 0.2 
+        });
+        const greenMat = new THREE.MeshStandardMaterial({ 
+            color: CONFIG.colors.green, roughness: 0.8 
+        });
+        const redMat = new THREE.MeshPhysicalMaterial({ 
+            color: CONFIG.colors.red, metalness: 0.1, roughness: 0.1, clearcoat: 1.0 
+        });
         const caneMat = new THREE.MeshStandardMaterial({ 
             map: AssetFactory.createCandyCaneTexture(),
             roughness: 0.3, metalness: 0.1 
         });
 
-        const materials = [
-            new THREE.MeshStandardMaterial({ color: CONFIG.colors.gold, metalness: 0.8, roughness: 0.2 }),
-            new THREE.MeshStandardMaterial({ color: CONFIG.colors.green, roughness: 0.8 }),
-            new THREE.MeshPhysicalMaterial({ color: CONFIG.colors.red, metalness: 0.1, roughness: 0.1, clearcoat: 1.0 })
-        ];
-
-        // Create Particles
-        for(let i=0; i<CONFIG.count.main; i++) {
-            let mesh;
-            const r = Math.random();
-            if(r < 0.6) {
-                mesh = new THREE.Mesh(boxGeo, materials[Math.floor(Math.random()*2)]);
-            } else if(r < 0.9) {
-                mesh = new THREE.Mesh(sphereGeo, materials[2]);
-            } else {
-                mesh = new THREE.Mesh(caneGeo, caneMat);
+        // 4. [核心修改] 批量生成函数
+        const createBatch = (count, geometry, material, type) => {
+            for (let i = 0; i < count; i++) {
+                const mesh = new THREE.Mesh(geometry, material);
+                
+                // 初始随机位置 (用于 scatter 状态或初始散落)
+                mesh.position.set(
+                    (Math.random() - 0.5) * 50, 
+                    (Math.random() - 0.5) * 50, 
+                    (Math.random() - 0.5) * 50
+                );
+                
+                mesh.castShadow = true;
+                mesh.receiveShadow = true;
+                
+                this.mainGroup.add(mesh);
+                // 传入 type 以便 Particle 类可能有特殊处理 (如 'CANE' 或 'ORNAMENT')
+                this.particles.push(new Particle(mesh, type));
             }
-            
-            mesh.position.set((Math.random()-0.5)*50, (Math.random()-0.5)*50, (Math.random()-0.5)*50);
-            mesh.castShadow = true;
-            mesh.receiveShadow = true;
-            
-            this.mainGroup.add(mesh);
-            this.particles.push(new Particle(mesh));
-        }
+        };
 
-        // Dust Particles
+        // 5. 根据配置生成各类粒子
+        const counts = CONFIG.particles.counts;
+        createBatch(counts.gold, boxGeo, goldMat, 'ORNAMENT'); // 金色方块
+        createBatch(counts.green, boxGeo, greenMat, 'ORNAMENT'); // 绿色方块
+        createBatch(counts.red, sphereGeo, redMat, 'ORNAMENT'); // 红色圆球
+        createBatch(counts.cane, caneGeo, caneMat, 'CANE');     // 拐杖糖
+
+        // 6. 创建灰尘 (Dust Particles) - 保持原逻辑
         const dustGeo = new THREE.BufferGeometry();
         const dustPos = [];
-        for(let i=0; i<CONFIG.count.dust; i++) {
+        for(let i=0; i < CONFIG.particles.dustCount; i++) {
             dustPos.push((Math.random()-0.5)*60, (Math.random()-0.5)*60, (Math.random()-0.5)*60);
         }
         dustGeo.setAttribute('position', new THREE.Float32BufferAttribute(dustPos, 3));
@@ -151,6 +165,65 @@ export class App {
         const dustSystem = new THREE.Points(dustGeo, dustMat);
         this.scene.add(dustSystem);
         this.dustSystem = dustSystem;
+    }
+
+    // [新增] 独立的创建星星方法
+    createStar() {
+        // 1. 从配置读取参数
+        const { outerRadius, innerRadius, thickness, bevelSize, bevelThickness } = CONFIG.star;
+
+        const starShape = new THREE.Shape();
+        const points = 5;
+
+        // 绘制五角星路径
+        for (let i = 0; i < points * 2; i++) {
+            const r = (i % 2 === 0) ? outerRadius : innerRadius;
+            // 计算角度
+            const a = (i / points) * Math.PI; 
+            const x = Math.cos(a) * r;
+            const y = Math.sin(a) * r;
+            if (i === 0) starShape.moveTo(x, y);
+            else starShape.lineTo(x, y);
+        }
+        starShape.closePath();
+
+        // 2. 挤压设置 (让它变圆润的关键)
+        const extrudeSettings = {
+            steps: 1,
+            depth: thickness,
+            bevelEnabled: true, 
+            bevelThickness: bevelThickness, // [配置] 控制侧面圆弧深度
+            bevelSize: bevelSize,           // [配置] 控制向外膨胀程度
+            bevelSegments: 10               // [硬编码] 增加分段数，让圆角非常光滑，不再有棱角感
+        };
+        const starGeo = new THREE.ExtrudeGeometry(starShape, extrudeSettings);
+
+        // 3. 材质 (自发光)
+        const starMat = new THREE.MeshStandardMaterial({ 
+            color: CONFIG.colors.gold,      
+            emissive: CONFIG.colors.gold,   
+            emissiveIntensity: 1.0,         
+            metalness: 0.9,
+            roughness: 0.1,
+        });
+
+        this.starMesh = new THREE.Mesh(starGeo, starMat);
+        
+        // 4. 放置位置与旋转修正
+        const topY = CONFIG.particles.treeHeight / 2 + 0.9;
+        this.starMesh.position.set(0, topY, 0); 
+        
+        // [修复倒置] 
+        // 几何体生成时可能是倒着的，绕 Z 轴旋转 180 度 (PI) 即可摆正
+        this.starMesh.rotation.z = Math.PI*20/180; 
+        
+        // 5. 添加到场景
+        this.mainGroup.add(this.starMesh);
+        
+        // 6. 伴随光源
+        const starLight = new THREE.PointLight(CONFIG.colors.gold, 5, 20);
+        starLight.position.set(0, topY, 1);
+        this.mainGroup.add(starLight);
     }
 
     addPhoto(texture) {

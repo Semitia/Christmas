@@ -4,7 +4,7 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-
+import { InputManager } from '../inputs/InputManager.js';
 import { CONFIG } from '../config.js';
 import { STATE } from '../state.js';
 import { AssetFactory } from '../utils/AssetFactory.js';
@@ -17,11 +17,12 @@ export class App {
         this.particles = [];
         this.photos = [];
         
+        this.inputManager = null;
         this.setupThree();
         this.createWorld();
         this.setupInputs();
-        
         this.vision = new VisionManager(this.handleGesture.bind(this));
+        this.setupModeSwitch();
         
         // Start loading sequence
         this.init();
@@ -165,6 +166,40 @@ export class App {
         const dustSystem = new THREE.Points(dustGeo, dustMat);
         this.scene.add(dustSystem);
         this.dustSystem = dustSystem;
+
+        this.inputManager = new InputManager(
+            this.camera, 
+            this.scene, 
+            this.mainGroup, 
+            this.particles // 将粒子数组传过去做点击检测
+        );
+    }
+
+    setupModeSwitch() {
+        const toggle = document.getElementById('mode-toggle');
+        const statusText = document.getElementById('status-text');
+        
+        // 默认状态设置 (Mouse)
+        toggle.checked = false; 
+        STATE.inputMode = 'MOUSE';
+        statusText.innerText = "MODE: MOUSE / TOUCH";
+
+        toggle.addEventListener('change', (e) => {
+            if (e.target.checked) {
+                STATE.inputMode = 'HAND';
+                statusText.innerText = "INITIALIZING CAMERA...";
+                // 只有切换到 Hand 模式才去激活摄像头，节省性能
+                if (!this.vision.isActive) {
+                    this.vision.init().then(success => {
+                        if(success) this.vision.isActive = true;
+                    });
+                }
+            } else {
+                STATE.inputMode = 'MOUSE';
+                statusText.innerText = "MODE: MOUSE / TOUCH";
+                // 摄像头不需要关闭，但我们会忽略它的数据
+            }
+        });
     }
 
     // [新增] 独立的创建星星方法
@@ -307,28 +342,29 @@ export class App {
         requestAnimationFrame(this.animate.bind(this));
         
         const time = performance.now() * 0.001;
-        const dt = 0.016; // Approx fixed delta for smoothness
+        const dt = 0.016;
 
-        // Vision
-        this.vision.detect();
-
-        // Group Rotation based on Hand or Auto
-        if (STATE.hand.present) {
-            // Map Hand X/Y (0-1) to Rotation angles
-            const targetRotY = (STATE.hand.x - 0.5) * 2; // -1 to 1 rad
-            const targetRotX = (STATE.hand.y - 0.5) * 1; 
-            this.mainGroup.rotation.y = THREE.MathUtils.lerp(this.mainGroup.rotation.y, targetRotY, 0.1);
-            this.mainGroup.rotation.x = THREE.MathUtils.lerp(this.mainGroup.rotation.x, targetRotX, 0.1);
+        // [修改] 视觉识别只有在 HAND 模式下才运行
+        if (STATE.inputMode === 'HAND') {
+            this.vision.detect();
+            // ... 原有的根据手势旋转 mainGroup 的逻辑 ...
+            if (STATE.hand.present) {
+                const targetRotY = (STATE.hand.x - 0.5) * 2;
+                const targetRotX = (STATE.hand.y - 0.5) * 1; 
+                this.mainGroup.rotation.y = THREE.MathUtils.lerp(this.mainGroup.rotation.y, targetRotY, 0.1);
+                this.mainGroup.rotation.x = THREE.MathUtils.lerp(this.mainGroup.rotation.x, targetRotX, 0.1);
+            }
         } else {
-            // Auto idle rotation
-            this.mainGroup.rotation.y += 0.001;
-            this.mainGroup.rotation.x = THREE.MathUtils.lerp(this.mainGroup.rotation.x, 0, 0.05);
+            // MOUSE 模式：InputManager 已经在处理事件回调了
+            // 这里只需要处理自动空闲旋转 (可选)
+            if (!this.inputManager.isDragging && STATE.mode === CONFIG.modes.TREE) {
+                this.mainGroup.rotation.y += 0.001; // 缓慢自转
+            }
         }
 
-        // Update Particles
+        // 粒子更新逻辑 (这部分不需要变，Particle.js 会根据 STATE.mode 自动处理)
         this.particles.forEach(p => p.update(dt, time));
 
-        // Animate Dust
         if(this.dustSystem) {
             this.dustSystem.rotation.y = -time * 0.05;
         }

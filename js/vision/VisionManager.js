@@ -39,41 +39,55 @@ export class VisionManager {
     }
 
     detect() {
-        if (!this.handLandmarker || this.video.currentTime === this.lastVideoTime) return;
+        // [新增] 安全检查 1: 确保 AI 模型已加载
+        if (!this.handLandmarker) return;
+
+        // [新增] 安全检查 2: 关键修复！确保视频有合法的宽高
+        // 如果摄像头刚打开还没画面，videoWidth 会是 0，强行处理就会导致 crash
+        if (!this.video || this.video.videoWidth === 0 || this.video.videoHeight === 0) {
+            return; 
+        }
+
+        // [原有逻辑] 检查是否是同一帧
+        if (this.video.currentTime === this.lastVideoTime) return;
         this.lastVideoTime = this.video.currentTime;
         
-        const result = this.handLandmarker.detectForVideo(this.video, performance.now());
-        
-        if (result.landmarks && result.landmarks.length > 0) {
-            STATE.hand.present = true;
-            const lm = result.landmarks[0]; // 21 landmarks
+        try {
+            // AI 检测
+            const result = this.handLandmarker.detectForVideo(this.video, performance.now());
             
-            // Update Cursor (Landmark 9 is middle finger MCP / palm center approx)
-            // MediaPipe X is inverted for mirror effect usually, but let's keep raw
-            STATE.hand.x = 1 - lm[9].x; // Mirroring logic
-            STATE.hand.y = lm[9].y;
+            if (result.landmarks && result.landmarks.length > 0) {
+                // ... (原有的手势处理代码保持不变) ...
+                STATE.hand.present = true;
+                const lm = result.landmarks[0]; 
+                
+                // Mirroring & Update
+                STATE.hand.x = 1 - lm[9].x; 
+                STATE.hand.y = lm[9].y;
 
-            // Gestures
-            // 1. Pinch (Thumb tip 4 vs Index tip 8)
-            const pinchDist = Math.hypot(lm[4].x - lm[8].x, lm[4].y - lm[8].y);
-            
-            // 2. Fist vs Open (Avg distance of tips to wrist 0)
-            const tips = [8, 12, 16, 20];
-            let avgDist = 0;
-            tips.forEach(t => {
-                avgDist += Math.hypot(lm[t].x - lm[0].x, lm[t].y - lm[0].y);
-            });
-            avgDist /= 4;
+                // Gestures logic ...
+                const pinchDist = Math.hypot(lm[4].x - lm[8].x, lm[4].y - lm[8].y);
+                
+                const tips = [8, 12, 16, 20];
+                let avgDist = 0;
+                tips.forEach(t => {
+                    avgDist += Math.hypot(lm[t].x - lm[0].x, lm[t].y - lm[0].y);
+                });
+                avgDist /= 4;
 
-            if (pinchDist < 0.05) {
-                this.onGesture('PINCH');
-            } else if (avgDist < 0.25) { // Thresholds depend on coordinate space, usually 0-1
-                this.onGesture('FIST'); 
-            } else if (avgDist > 0.4) {
-                this.onGesture('OPEN');
+                if (pinchDist < 0.05) {
+                    this.onGesture('PINCH');
+                } else if (avgDist < 0.25) { 
+                    this.onGesture('FIST'); 
+                } else if (avgDist > 0.4) {
+                    this.onGesture('OPEN');
+                }
+            } else {
+                STATE.hand.present = false;
             }
-        } else {
-            STATE.hand.present = false;
+        } catch (e) {
+            // 捕获偶发的检测错误，防止整个程序崩溃
+            console.warn("MediaPipe Detect Error:", e);
         }
     }
 }

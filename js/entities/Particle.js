@@ -18,7 +18,7 @@ export class Particle {
 
         // 自转速度
         let speedMult = 2.0; 
-        if (type === 'PHOTO') speedMult = 0.3;
+        if (type === 'PHOTO' || type === 'CARD') speedMult = 0.3;
         else if (type === 'GEM') speedMult = 8; // 宝石转得快，bling bling
 
         this.spinSpeed = new THREE.Vector3(
@@ -123,10 +123,10 @@ export class Particle {
         let s = this.baseScale || 1.0;
         
         if (currentMode === CONFIG.modes.FOCUS) {
-             if (this.mesh.userData.isFocusTarget) s = 4.5;
-             else s = (this.baseScale || 1.0) * 0.8;
-        } else if (currentMode === CONFIG.modes.SCATTER && this.type === 'PHOTO') {
-             s = (this.baseScale || 1.0) * 2.5;
+            if (this.mesh.userData.isFocusTarget) s = 4.5;
+            else s = (this.baseScale || 1.0) * 0.8;
+        } else if (currentMode === CONFIG.modes.SCATTER && (this.type === 'PHOTO' || this.type === 'CARD')) {
+            s = (this.baseScale || 1.0) * 2.5;
         }
         
         // 简单的缩放插值

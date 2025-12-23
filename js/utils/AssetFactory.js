@@ -111,4 +111,88 @@ export class AssetFactory {
         const tex = new THREE.CanvasTexture(canvas);
         return tex;
     }
+
+    /**
+     * 创建贺卡纹理
+     * @param {string} text - 正文内容
+     * @param {string} author - 作者/出处
+     * @param {object} style - 配色样式 {bg, text, border}
+     */
+    static createCardTexture(text, author, style) {
+        const width = 512;
+        const height = 768; // 2:3 纵向比例
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+
+        // 1. 绘制背景
+        ctx.fillStyle = style.bg;
+        ctx.fillRect(0, 0, width, height);
+
+        // 2. 绘制边框
+        ctx.strokeStyle = style.border;
+        ctx.lineWidth = 20;
+        ctx.strokeRect(20, 20, width - 40, height - 40);
+        
+        // 内细线
+        ctx.lineWidth = 4;
+        ctx.strokeRect(35, 35, width - 70, height - 70);
+
+        // 3. 绘制装饰元素 (顶部和底部的花纹)
+        ctx.fillStyle = style.border;
+        ctx.beginPath();
+        ctx.arc(width/2, 60, 10, 0, Math.PI*2); // 顶部圆点
+        ctx.fill();
+
+        // 4. 文字设置
+        ctx.fillStyle = style.text;
+        ctx.textAlign = 'center';
+        
+        // --- 绘制正文 (自动换行) ---
+        const fontSize = 36;
+        const lineHeight = 50;
+        ctx.font = `italic ${fontSize}px "Times New Roman", serif`;
+        
+        const maxWidth = width - 120; // 左右留边距
+        const words = text.split(''); // 对于中文，我们按字符分割；英文按单词分割逻辑会更复杂，这里简单处理
+        // 简单的中英文混排换行逻辑
+        let line = '';
+        let lines = [];
+        
+        // 稍微智能一点的分割：先按空格分词，如果单词太长再强行切断（针对英文），中文直接切
+        // 为了简化，这里使用“按字符逐个累加测量”的方法，通用性最强
+        let currentLine = '';
+        for (let i = 0; i < text.length; i++) {
+            const char = text[i];
+            const testLine = currentLine + char;
+            const metrics = ctx.measureText(testLine);
+            if (metrics.width > maxWidth && i > 0) {
+                lines.push(currentLine);
+                currentLine = char;
+            } else {
+                currentLine = testLine;
+            }
+        }
+        lines.push(currentLine);
+
+        // 计算垂直居中
+        const totalTextHeight = lines.length * lineHeight;
+        let startY = (height - totalTextHeight) / 2 - 40; // 稍微偏上一点
+
+        lines.forEach((l, i) => {
+            ctx.fillText(l, width / 2, startY + i * lineHeight);
+        });
+
+        // --- 绘制作者 ---
+        ctx.font = `bold 24px "Times New Roman", serif`;
+        ctx.fillText(`— ${author}`, width / 2, startY + lines.length * lineHeight + 60);
+
+        // 生成纹理
+        const tex = new THREE.CanvasTexture(canvas);
+        tex.colorSpace = THREE.SRGBColorSpace;
+        // 稍微降低各向异性过滤，避免文字闪烁，或者根据需要开启
+        // tex.anisotropy = 16; 
+        return tex;
+    }
 }

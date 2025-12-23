@@ -131,7 +131,7 @@ export class InputManager {
         const intersectObjects = [];
         this.particles.forEach(p => {
             // 只检测照片，或者你可以检测所有物体
-            if (p.type === 'PHOTO') intersectObjects.push(p.mesh);
+            if (p.type === 'PHOTO' || p.type === 'CARD') intersectObjects.push(p.mesh);
         });
 
         const intersects = this.raycaster.intersectObjects(intersectObjects);

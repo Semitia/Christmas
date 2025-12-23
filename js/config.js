@@ -25,10 +25,11 @@ export const CONFIG = {
             gem: 40,
             cane: 25,       // 拐杖糖数量
             bulb: 20,
+            card: 10,
         },
-        dustCount: 3000,  // 灰尘数量
+        dustCount: 2000,  // 灰尘数量
         snow: {
-            count: 600,     // 雪花数量
+            count: 400,     // 雪花数量
             size: 0.7,       // 粒子大小
             speed: 0.15,      // 下落速度系数
             range: 60,        // 飘雪范围 (宽/高)
@@ -54,6 +55,17 @@ export const CONFIG = {
         bevelSize: 0.2,     // 倒角大小 (越大越圆润/蓬松)
         bevelThickness: 0.4 // 倒角深度 (越大侧面越圆)
     },
+    // [新增] 贺卡样式模板
+    cardStyles: [
+        // 样式 1: 经典米白 (Cream) + 金字
+        { bg: '#FFF8DC', text: '#8B4513', border: '#D4AF37' },
+        // 样式 2: 圣诞红 (Festive Red) + 金字
+        { bg: '#800020', text: '#FFD700', border: '#FFFFFF' },
+        // 样式 3: 午夜蓝 (Midnight Blue) + 银字
+        { bg: '#191970', text: '#E0E0E0', border: '#C0C0C0' },
+        // 样式 4: 森绿 (Forest Green) + 米白字
+        { bg: '#004225', text: '#F5F5DC', border: '#D4AF37' }
+    ],
 
     // [新增] 光照系统配置
     // lighting: {

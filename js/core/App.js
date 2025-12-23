@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { QUOTES } from '../data/quotes.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
@@ -31,7 +32,7 @@ export class App {
     async init() {
         await this.vision.init();
         // Add default photo
-        this.addPhoto(AssetFactory.createDefaultPhoto());
+        // this.addPhoto(AssetFactory.createDefaultPhoto());
         
         // Hide loader
         const loader = document.getElementById('loader');
@@ -239,6 +240,8 @@ export class App {
         createBatch(counts.gem, gemGeo, gemMat, 'GEM');
         createBatch(counts.bulb, bulbGeo, bulbMat, 'BULB');
 
+        this.createCards();
+
         // 6. 创建灰尘 (Dust Particles) - 保持原逻辑
         const dustGeo = new THREE.BufferGeometry();
         const dustPos = [];
@@ -387,6 +390,57 @@ export class App {
         const starLight = new THREE.PointLight(CONFIG.colors.gold, 5, 20);
         starLight.position.set(0, topY, 1);
         this.mainGroup.add(starLight);
+    }
+
+    createCards() {
+        const cardCount = CONFIG.particles.counts.card;
+        const styles = CONFIG.cardStyles;
+        
+        // 卡片几何体：稍微有点厚度的盒子，看起来像硬纸板
+        const cardGeo = new THREE.BoxGeometry(2.0, 3.0, 0.05);
+
+        for (let i = 0; i < cardCount; i++) {
+            // 1. 循环选取句子
+            const quoteData = QUOTES[i % QUOTES.length];
+            
+            // 2. 随机选取样式
+            const style = styles[Math.floor(Math.random() * styles.length)];
+
+            // 3. 生成纹理
+            const texture = AssetFactory.createCardTexture(quoteData.text, quoteData.author, style);
+
+            // 4. 创建材质
+            // 正面是文字，侧面和背面用纯色（取样式的背景色或边框色）
+            const sideMat = new THREE.MeshStandardMaterial({ color: style.bg, roughness: 0.8 });
+            const faceMat = new THREE.MeshStandardMaterial({ 
+                map: texture, 
+                roughness: 0.6, 
+                metalness: 0.1 
+            });
+
+            // 材质数组：右, 左, 上, 下, 前, 后
+            // 我们假设 Z+ 是前面
+            const materials = [sideMat, sideMat, sideMat, sideMat, faceMat, sideMat];
+
+            const mesh = new THREE.Mesh(cardGeo, materials);
+
+            // 5. 随机位置 (复用之前的树/散落逻辑)
+            // 初始给个随机位置
+            mesh.position.set((Math.random()-0.5)*50, (Math.random()-0.5)*50, (Math.random()-0.5)*50);
+            
+            mesh.castShadow = true;
+            mesh.receiveShadow = true;
+
+            this.mainGroup.add(mesh);
+            
+            // 6. 加入粒子系统
+            // 类型标记为 'CARD'，这样 Particle.js 可以给它特定的自转速度
+            this.particles.push(new Particle(mesh, 'CARD'));
+            
+            // 如果你想让点击聚焦功能对卡片生效，也可以把它们加到 focus 列表里
+            // 暂时先把 mesh.userData 标记一下
+            mesh.userData.isCard = true; 
+        }
     }
 
     addPhoto(texture) {

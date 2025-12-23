@@ -167,8 +167,10 @@ export class App {
         // 2. 准备几何体 (Shared Geometries)
         const boxGeo = new THREE.BoxGeometry(0.5, 0.5, 0.5);
         const sphereGeo = new THREE.SphereGeometry(0.3, 16, 16);
-        const gemGeo = new THREE.OctahedronGeometry(0.3, 0);
-        const goldGeo = new THREE.IcosahedronGeometry(0.35, 0);
+        const gemGeo = new THREE.OctahedronGeometry(0.3, 0);  // 四面体
+        const goldGeo = new THREE.DodecahedronGeometry(0.35, 0); // 十二面体
+        //const goldGeo = new THREE.IcosahedronGeometry(0.35, 0);  // 二十面体
+        const bulbGeo = new THREE.SphereGeometry(0.25, 16, 16);
 
         // 拐杖糖几何体
         const curve = new THREE.CatmullRomCurve3([
@@ -199,6 +201,14 @@ export class App {
             // emissive: 0x001133,         // 微弱的深蓝自发光，增加通透感
             // emissiveIntensity: 0.5
         });
+        const bulbMat = new THREE.MeshStandardMaterial({ 
+            color: CONFIG.colors.warmWhite, 
+            emissive: CONFIG.colors.warmWhite,
+            emissiveIntensity: 0.8, // 强度高一点，制造发光感
+            roughness: 0.4,
+            metalness: 0.0
+        });
+
         // 4. [核心修改] 批量生成函数
         const createBatch = (count, geometry, material, type) => {
             for (let i = 0; i < count; i++) {
@@ -227,6 +237,7 @@ export class App {
         createBatch(counts.red, sphereGeo, redMat, 'ORNAMENT'); // 红色圆球
         createBatch(counts.cane, caneGeo, caneMat, 'CANE');     // 拐杖糖
         createBatch(counts.gem, gemGeo, gemMat, 'GEM');
+        createBatch(counts.bulb, bulbGeo, bulbMat, 'BULB');
 
         // 6. 创建灰尘 (Dust Particles) - 保持原逻辑
         const dustGeo = new THREE.BufferGeometry();
@@ -241,6 +252,48 @@ export class App {
         const dustSystem = new THREE.Points(dustGeo, dustMat);
         this.scene.add(dustSystem);
         this.dustSystem = dustSystem;
+
+        // ===========================
+        // [新增] 飘雪系统 (Snow System)
+        // ===========================
+        const snowConfig = CONFIG.particles.snow;
+        const snowGeo = new THREE.BufferGeometry();
+        const snowPos = [];
+        const snowVelocities = []; // 存储每个雪花的下落速度
+        const snowPhase = [];      // 存储每个雪花的横向摇摆相位
+
+        for(let i=0; i < snowConfig.count; i++) {
+            const range = snowConfig.range;
+            // 随机分布在场景中
+            const x = (Math.random() - 0.5) * range;
+            const y = (Math.random() - 0.5) * range; 
+            const z = (Math.random() - 0.5) * range;
+            snowPos.push(x, y, z);
+
+            // 速度：基础速度 + 随机差异
+            snowVelocities.push(Math.random() * 0.5 + 0.5); 
+            // 相位：0 到 2PI，保证摇摆不同步
+            snowPhase.push(Math.random() * Math.PI * 2);
+        }
+
+        snowGeo.setAttribute('position', new THREE.Float32BufferAttribute(snowPos, 3));
+        
+        // 我们利用 attributes 把速度和相位存进 geometry (虽然这里用 CPU 动画，存数组也行，但存 attribute 方便管理)
+        // 为了方便 CPU 访问，我这里还是直接把数组挂在 geometry 的 userData 上，或者直接作为类属性
+        snowGeo.userData = { velocities: snowVelocities, phases: snowPhase };
+
+        const snowMat = new THREE.PointsMaterial({ 
+            color: 0xffffff, 
+            map: AssetFactory.createSnowTexture(), // 使用刚才写的纹理
+            size: snowConfig.size, 
+            transparent: true, 
+            opacity: 0.8,
+            blending: THREE.AdditiveBlending, // 加亮混合，像发光的雪
+            depthWrite: false // 关键：防止遮挡产生的黑边问题
+        });
+
+        this.snowSystem = new THREE.Points(snowGeo, snowMat);
+        this.scene.add(this.snowSystem);
 
         this.inputManager = new InputManager(
             this.camera, 
@@ -442,6 +495,45 @@ export class App {
 
         if(this.dustSystem) {
             this.dustSystem.rotation.y = -time * 0.05;
+        }
+        
+        // ===========================
+        // [新增] 雪花动画逻辑
+        // ===========================
+        if (this.snowSystem) {
+            const geo = this.snowSystem.geometry;
+            const positions = geo.attributes.position.array;
+            const velocities = geo.userData.velocities;
+            const phases = geo.userData.phases;
+            
+            // [新增] 读取配置
+            const snowConfig = CONFIG.particles.snow;
+            const range = snowConfig.range;
+            const halfRange = range / 2;
+
+            for (let i = 0; i < snowConfig.count; i++) {
+                const i3 = i * 3;
+                
+                // 1. 下落逻辑 (保持不变)
+                positions[i3 + 1] -= snowConfig.speed * velocities[i] * dt * 5; 
+
+                // 2. 边界检查 (保持不变)
+                if (positions[i3 + 1] < -halfRange) {
+                    positions[i3 + 1] = halfRange; 
+                    positions[i3] = (Math.random() - 0.5) * range;
+                    positions[i3 + 2] = (Math.random() - 0.5) * range;
+                }
+
+                // 3. [核心修改] 横向摇摆 (模拟风)
+                // time * swayFreq: 控制变换的快慢 (频率)
+                // * swayAmp: 控制单次移动的距离 (幅度)
+                const sway = Math.sin(time * snowConfig.swayFreq + phases[i]) * snowConfig.swayAmp;
+                
+                positions[i3] += sway;      
+                positions[i3 + 2] += sway;  
+            }
+
+            geo.attributes.position.needsUpdate = true;
         }
 
         this.composer.render();

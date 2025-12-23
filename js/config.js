@@ -12,19 +12,33 @@ export const CONFIG = {
         cream: 0xfceea7, 
         red: 0xaa0000, 
         green: 0x003300,
-        ice: 0xaaddff
+        ice: 0xaaddff,
+        warmWhite: 0xffedcc//0xfff4e0
     },
 
     // 2. 粒子参数：采用新结构，包含数量和树的形状
     particles: {
         counts: {
-            gold: 200,      // 金色方块数量
+            gold: 150,      // 金色方块数量
             green: 300,     // 绿色方块数量
             red: 100,       // 红色圆球数量
-            gem: 15,
-            cane: 25       // 拐杖糖数量
+            gem: 40,
+            cane: 25,       // 拐杖糖数量
+            bulb: 20,
         },
         dustCount: 3000,  // 灰尘数量
+        snow: {
+            count: 600,     // 雪花数量
+            size: 0.7,       // 粒子大小
+            speed: 0.15,      // 下落速度系数
+            range: 60,        // 飘雪范围 (宽/高)
+            // [新增] 摇摆控制
+            // 频率 (Frequency): 默认是 1.0。改小(如 0.3)会让左右飘荡的周期变长，看起来更悠闲。
+            swayFreq: 0.3, 
+            
+            // 幅度 (Amplitude): 默认是 0.02。改小(如 0.01)会让每次移动的距离变短，看起来更轻盈。
+            swayAmp: 0.01
+        },
         treeHeight: 24,   // [新] 高度，让树变修长
         treeRadius: 9,   // [新] 半径，让树变瘦
         // [新增参数] 树的分布均匀度

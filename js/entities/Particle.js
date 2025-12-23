@@ -47,6 +47,12 @@ export class Particle {
         let t = Math.random(); 
         t = Math.pow(t, exponent); // 应用指数分布
 
+        if (this.type === 'CARD') {
+            // 强制 t 的范围在 0.0 (底部) 到 0.6 (中部) 之间
+            // 这样卡片绝不会出现在树的顶端 (0.6 ~ 1.0)
+            t = t * 0.5; 
+        }
+
         const y = (t * h) - halfH;
 
         // 半径计算：越往上越窄
@@ -55,7 +61,7 @@ export class Particle {
 
         // 角度完全随机
         const angle = Math.random() * Math.PI * 2; 
-        
+                
         // 半径随机扰动
         const r = rMax * (0.6 + Math.random() * 0.4); 
 
@@ -160,5 +166,6 @@ export class Particle {
         }
         
         this.mesh.scale.lerp(new THREE.Vector3(s,s,s), 4*dt);
+        
     }
 }

@@ -56,16 +56,11 @@ export const CONFIG = {
         bevelThickness: 0.4 // 倒角深度 (越大侧面越圆)
     },
     // [新增] 贺卡样式模板
-    cardStyles: [
-        // 样式 1: 经典米白 (Cream) + 金字
-        { bg: '#FFF8DC', text: '#8B4513', border: '#D4AF37' },
-        // 样式 2: 圣诞红 (Festive Red) + 金字
-        { bg: '#800020', text: '#FFD700', border: '#FFFFFF' },
-        // 样式 3: 午夜蓝 (Midnight Blue) + 银字
-        { bg: '#191970', text: '#E0E0E0', border: '#C0C0C0' },
-        // 样式 4: 森绿 (Forest Green) + 米白字
-        { bg: '#004225', text: '#F5F5DC', border: '#D4AF37' }
-    ],
+    cardConfig: {
+        width: 2.5,   // 横版宽度
+        height: 1.6,  // 横版高度
+        thickness: 0.05
+    },
 
     // [新增] 光照系统配置
     // lighting: {

@@ -394,52 +394,82 @@ export class App {
 
     createCards() {
         const cardCount = CONFIG.particles.counts.card;
-        const styles = CONFIG.cardStyles;
+        const cardDims = CONFIG.cardConfig; // { width, height, thickness }
         
-        // 卡片几何体：稍微有点厚度的盒子，看起来像硬纸板
-        const cardGeo = new THREE.BoxGeometry(2.0, 3.0, 0.05);
+        // 贺卡几何体 (横版)
+        const cardGeo = new THREE.BoxGeometry(cardDims.width, cardDims.height, cardDims.thickness);
+
+        // --- 1. 准备句子队列 (洗牌算法) ---
+        // 复制一份引用，避免修改原数据
+        let availableQuotes = [...QUOTES];
+        
+        // Fisher-Yates 洗牌算法
+        for (let i = availableQuotes.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [availableQuotes[i], availableQuotes[j]] = [availableQuotes[j], availableQuotes[i]];
+        }
 
         for (let i = 0; i < cardCount; i++) {
-            // 1. 循环选取句子
-            const quoteData = QUOTES[i % QUOTES.length];
-            
-            // 2. 随机选取样式
-            const style = styles[Math.floor(Math.random() * styles.length)];
+            // --- 2. 选取句子 (如果不一够了，就从头循环) ---
+            const quoteData = availableQuotes[i % availableQuotes.length];
 
-            // 3. 生成纹理
-            const texture = AssetFactory.createCardTexture(quoteData.text, quoteData.author, style);
+            // --- 3. 随机分配模板 (0-3) ---
+            const styleIndex = Math.floor(Math.random() * 4);
 
-            // 4. 创建材质
-            // 正面是文字，侧面和背面用纯色（取样式的背景色或边框色）
-            const sideMat = new THREE.MeshStandardMaterial({ color: style.bg, roughness: 0.8 });
-            const faceMat = new THREE.MeshStandardMaterial({ 
-                map: texture, 
-                roughness: 0.6, 
-                metalness: 0.1 
+            // --- 4. 生成纹理 ---
+            const texture = AssetFactory.createCardTexture(quoteData.text, quoteData.author, styleIndex);
+
+            // --- 5. 创建材质 ---
+            // 侧面：纯哑光纸张
+            const sideMat = new THREE.MeshStandardMaterial({ 
+                color: 0xeeece0, // 米白色纸芯
+                roughness: 1.0,  // [修改] 粗糙度拉满，完全不反光
+                metalness: 0.0   // [修改] 非金属
             });
 
-            // 材质数组：右, 左, 上, 下, 前, 后
-            // 我们假设 Z+ 是前面
+            // 正面：印刷品质感
+            const faceMat = new THREE.MeshStandardMaterial({ 
+                map: texture, 
+                roughness: 1.0,      // [修改] 很高粗糙度，像铜版纸或卡纸
+                metalness: 0.0,      // [修改] 0 金属度
+                emissive: 0x000000,  // [修改] 彻底关掉自发光，只靠灯光照亮
+                emissiveIntensity: 0 // 确保不发光
+            });
+
+            // 材质数组：右, 左, 上, 下, 前, 后 (假设Z+是前)
             const materials = [sideMat, sideMat, sideMat, sideMat, faceMat, sideMat];
 
             const mesh = new THREE.Mesh(cardGeo, materials);
 
-            // 5. 随机位置 (复用之前的树/散落逻辑)
-            // 初始给个随机位置
-            mesh.position.set((Math.random()-0.5)*50, (Math.random()-0.5)*50, (Math.random()-0.5)*50);
+            // [新增] 进场动画初始化
+            // 先把尺寸设为 0
+            mesh.scale.set(0, 0, 0);
             
+            // 随机位置
+            mesh.position.set((Math.random()-0.5)*50, (Math.random()-0.5)*50, (Math.random()-0.5)*50);
             mesh.castShadow = true;
             mesh.receiveShadow = true;
 
             this.mainGroup.add(mesh);
             
-            // 6. 加入粒子系统
-            // 类型标记为 'CARD'，这样 Particle.js 可以给它特定的自转速度
-            this.particles.push(new Particle(mesh, 'CARD'));
+            const p = new Particle(mesh, 'CARD');
             
-            // 如果你想让点击聚焦功能对卡片生效，也可以把它们加到 focus 列表里
-            // 暂时先把 mesh.userData 标记一下
-            mesh.userData.isCard = true; 
+            // [关键] 强制重置 baseScale 为 1.0 (因为刚才 mesh.scale 是 0，Particle 构造函数可能把 baseScale 设为了 0)
+            p.baseScale = 1.0; 
+            
+            this.particles.push(p);
+            // // --- 6. 随机位置 ---
+            // mesh.position.set((Math.random()-0.5)*50, (Math.random()-0.5)*50, (Math.random()-0.5)*50);
+            // mesh.castShadow = true;
+            // mesh.receiveShadow = true;
+
+            // this.mainGroup.add(mesh);
+            
+            // // 加入粒子系统
+            // this.particles.push(new Particle(mesh, 'CARD'));
+            
+            // 标记用于点击聚焦
+            mesh.userData.isFocusTarget = false; 
         }
     }
 
@@ -511,6 +541,14 @@ export class App {
             }
         });
 
+        // [新增] 绑定刷新按钮
+        const refreshBtn = document.getElementById('refresh-btn');
+        if (refreshBtn) {
+            refreshBtn.addEventListener('click', () => {
+                this.refreshWishes();
+            });
+        }
+
         // Resize
         window.addEventListener('resize', () => {
             this.camera.aspect = window.innerWidth / window.innerHeight;
@@ -518,6 +556,47 @@ export class App {
             this.renderer.setSize(window.innerWidth, window.innerHeight);
             this.composer.setSize(window.innerWidth, window.innerHeight);
         });
+    }
+
+    // [新增] 刷新贺卡逻辑
+    refreshWishes() {
+        // 1. 找到所有现存的卡片
+        const cards = this.particles.filter(p => p.type === 'CARD');
+        
+        if (cards.length === 0) return; // 防止重复点击
+
+        // 2. 离场动画：将它们的目标缩放设为 0
+        // Particle.update 会自动处理插值，让它们缩小
+        cards.forEach(p => {
+            p.baseScale = 0; // 这是一个自定义标记，告诉 update 把它缩没了
+            // 为了防止 FOCUS 模式干扰，强制设为 SCATTER 行为
+            p.type = 'DYING_CARD'; // 临时改个类型，避免被正常逻辑干扰
+        });
+
+        // 3. 等待动画完成后 (600ms)，清理并重新生成
+        setTimeout(() => {
+            // 清理旧资源
+            cards.forEach(p => {
+                this.mainGroup.remove(p.mesh);
+                if (p.mesh.geometry) p.mesh.geometry.dispose();
+                if (p.mesh.material) {
+                    if (Array.isArray(p.mesh.material)) {
+                        p.mesh.material.forEach(m => m.dispose());
+                    } else {
+                        p.mesh.material.dispose();
+                    }
+                }
+                // 也要释放纹理，防止内存泄漏
+                // 这里简化处理，严谨的话需要遍历 material map dispose
+            });
+
+            // 从粒子数组中移除
+            this.particles = this.particles.filter(p => p.type !== 'DYING_CARD');
+
+            // 重新生成
+            this.createCards();
+
+        }, 600);
     }
 
     animate() {

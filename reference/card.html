@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>圣诞树书摘卡 (6款完整版)</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Great+Vibes&family=Noto+Serif+SC:wght@300;600&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Zhi+Mang+Xing&family=Ma+Shan+Zheng&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --gold: #d4af37;
+            --dark-bg: #1a1a1a;
+        }
+
+        body {
+            background-color: #f0f2f5;
+            font-family: system-ui, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px 20px;
+            min-height: 100vh;
+        }
+
+        h1 {
+            font-family: 'Noto Serif SC', serif;
+            font-weight: 300;
+            margin-bottom: 50px;
+            color: #333;
+            letter-spacing: 3px;
+            text-align: center;
+        }
+        
+        h2 {
+            font-family: sans-serif;
+            font-size: 14px;
+            color: #888;
+            margin-bottom: 15px;
+            margin-top: 0;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            text-align: center;
+            width: 100%;
+        }
+
+        .gallery {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 80px; /* 增加间距 */
+            width: 100%;
+            max-width: 800px;
+        }
+
+        /* 基础卡片容器 */
+        .card-wrapper {
+            perspective: 1000px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .card {
+            width: 100%;
+            height: 380px;
+            position: relative;
+            background: white;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.15);
+            transition: transform 0.4s ease, box-shadow 0.4s ease;
+            cursor: pointer;
+            overflow: hidden;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .card:hover {
+            transform: translateY(-5px) scale(1.01);
+            box-shadow: 0 25px 50px rgba(0,0,0,0.25);
+        }
+
+        /* =========================================
+           STYLE 1: The Great Gatsby (奢华流金)
+           ========================================= */
+        .style-deco {
+            background-color: #0f1215;
+            border: 8px solid #0f1215;
+            position: relative;
+            color: #f6e27a;
+        }
+        .style-deco::before {
+            content: ''; position: absolute;
+            top: 10px; bottom: 10px; left: 10px; right: 10px;
+            border: 2px solid var(--gold); z-index: 1;
+        }
+        .style-deco::after {
+            content: ''; position: absolute;
+            top: 20px; bottom: 20px; left: 20px; right: 20px;
+            border: 1px solid rgba(212, 175, 55, 0.5); z-index: 1;
+        }
+        .deco-corner {
+            position: absolute; width: 60px; height: 60px;
+            background: linear-gradient(135deg, transparent 50%, var(--gold) 50%, var(--gold) 55%, transparent 55%),
+                        linear-gradient(45deg, transparent 50%, var(--gold) 50%, var(--gold) 55%, transparent 55%);
+            z-index: 2;
+        }
+        .dc-tl { top: 10px; left: 10px; }
+        .dc-tr { top: 10px; right: 10px; transform: rotate(90deg); }
+        .dc-br { bottom: 10px; right: 10px; transform: rotate(180deg); }
+        .dc-bl { bottom: 10px; left: 10px; transform: rotate(270deg); }
+
+        .deco-content {
+            z-index: 10; text-align: center; width: 70%; padding: 20px;
+            border-top: 1px solid var(--gold); border-bottom: 1px solid var(--gold);
+            background: rgba(15, 18, 21, 0.9);
+        }
+        .style-deco .quote {
+            font-family: 'Cinzel Decorative', cursive; font-size: 24px; line-height: 1.6;
+            background: linear-gradient(to right, #cfc09f, #ffecb3, #b3a076);
+            -webkit-background-clip: text; color: transparent;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+        .style-deco .author {
+            font-family: sans-serif; font-size: 10px; letter-spacing: 4px;
+            margin-top: 20px; color: #888; text-transform: uppercase;
+        }
+
+        /* =========================================
+           STYLE 2: The Misty Landscape (远山淡影·白昼)
+           * 横版 + 毛笔字
+           ========================================= */
+        .style-scroll {
+            background: #fdfbf7;
+            background-image: url("data:image/svg+xml,%3Csvg width='200' height='200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.05'/%3E%3C/svg%3E");
+            display: flex; justify-content: center; align-items: center; position: relative;
+        }
+        .mountains {
+            position: absolute; bottom: 0; left: 0; width: 100%; height: 100%;
+            overflow: hidden; opacity: 0.6; pointer-events: none;
+        }
+        .mtn { position: absolute; border-radius: 50% 50% 0 0; filter: blur(5px); }
+        /* 白昼山峦色 */
+        .m1 { width: 60%; height: 150px; bottom: -20px; left: -10%; background: #dcdcdcdc; z-index: 1; }
+        .m2 { width: 80%; height: 200px; bottom: -40px; right: -20%; background: #c0c0c0; z-index: 2; }
+        .m3 { width: 40%; height: 120px; bottom: -10px; left: 40%; background: #a9a9a9; z-index: 3; filter: blur(2px); }
+
+        .scroll-content {
+            position: relative; z-index: 10;
+            display: flex; flex-direction: column-reverse; /* 横向布局，文字在上 */
+            align-items: center; justify-content: center;
+            gap: 20px; padding: 40px; width: 80%;
+        }
+        .style-scroll .quote {
+            font-family: 'Zhi Mang Xing', cursive; /* 毛笔字 */
+            font-size: 32px; color: #2c2c2c;
+            line-height: 1.6; letter-spacing: 2px; font-weight: 400;
+            text-align: center; text-shadow: 0 1px 1px rgba(255,255,255,0.8);
+        }
+        .style-scroll .author-box {
+            border-top: 1px solid #dba3a3; padding-top: 15px;
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+        }
+        .style-scroll .author {
+            font-family: 'Zhi Mang Xing', cursive; font-size: 18px; color: #8b4513;
+        }
+        .chop {
+            width: 24px; height: 24px; border: 2px solid #b22222; color: #b22222;
+            font-size: 12px; display: flex; justify-content: center; align-items: center;
+            font-family: 'Noto Serif SC', serif; border-radius: 4px; background: rgba(255,255,255,0.5);
+        }
+
+        /* =========================================
+           STYLE 3: The Enchanted Ticket (魔法车票)
+           ========================================= */
+        .style-magic {
+            background: linear-gradient(to right bottom, #141E30, #243B55);
+            border-radius: 12px; padding: 15px;
+        }
+        .magic-border {
+            width: 100%; height: 100%; border: 2px dashed rgba(255,255,255,0.3);
+            border-radius: 8px; position: relative;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .corner-ornament {
+            position: absolute; width: 40px; height: 40px;
+            border: 2px solid #a8c0ff; border-radius: 50%;
+        }
+        .co-tl { top: -10px; left: -10px; border-right-color: transparent; border-bottom-color: transparent; }
+        .co-tr { top: -10px; right: -10px; border-left-color: transparent; border-bottom-color: transparent; }
+        .co-bl { bottom: -10px; left: -10px; border-right-color: transparent; border-top-color: transparent; }
+        .co-br { bottom: -10px; right: -10px; border-left-color: transparent; border-top-color: transparent; }
+
+        .magic-content {
+            background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(5px);
+            padding: 40px 60px; border-radius: 4px;
+            border: 1px solid rgba(255,255,255,0.1); text-align: center;
+            position: relative; width: 70%;
+        }
+        .style-magic .quote {
+            font-family: 'Playfair Display', serif; font-size: 24px;
+            color: #e0e0e0; line-height: 1.5; text-shadow: 0 0 10px #a8c0ff;
+        }
+        .style-magic .author {
+            font-family: 'Cinzel Decorative', cursive; margin-top: 25px;
+            font-size: 14px; color: #d1d8e0;
+        }
+        .sparkle {
+            position: absolute; background: white; border-radius: 50%;
+            animation: twinkle 3s infinite;
+        }
+        @keyframes twinkle { 0%, 100% {opacity:0.3; transform: scale(1);} 50% {opacity: 1; transform: scale(1.2);} }
+
+        /* =========================================
+           STYLE 4: The Vintage Garden (复古花园·白昼)
+           ========================================= */
+        .style-floral {
+            background: white; padding: 20px;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .floral-frame-outer {
+            width: 100%; height: 100%; border: 2px solid #8fbc8f;
+            position: relative; display: flex; align-items: center; justify-content: center;
+        }
+        .floral-frame-inner {
+            position: absolute; top: 10px; bottom: 10px; left: 10px; right: 10px;
+            border: 1px solid #d8bfd8;
+        }
+        .flower {
+            position: absolute; width: 80px; height: 80px;
+            background: radial-gradient(circle, #ffdec9 20%, transparent 20%),
+                        radial-gradient(circle, #ffb7b2 20%, transparent 20%);
+            background-position: 0 0, 40px 40px; background-size: 20px 20px;
+            opacity: 0.5;
+        }
+        .f-tl { top: -10px; left: -10px; clip-path: circle(50% at 20% 20%); }
+        .f-br { bottom: -10px; right: -10px; clip-path: circle(50% at 80% 80%); }
+
+        .floral-content {
+            z-index: 5; background: white; padding: 30px 60px; text-align: center;
+            border: 1px solid #eee; box-shadow: 0 10px 20px rgba(0,0,0,0.05); max-width: 70%;
+        }
+        .style-floral .quote {
+            font-family: 'Great Vibes', cursive; font-size: 32px; color: #556b2f;
+        }
+        .style-floral .quote-body {
+             font-family: 'Playfair Display', serif; font-size: 20px;
+             color: #4a4a4a; margin-top: 10px; font-style: italic;
+        }
+        .style-floral .author {
+            font-family: serif; font-size: 12px; margin-top: 20px;
+            color: #999; text-transform: uppercase; letter-spacing: 2px;
+            border-top: 1px solid #eee; padding-top: 10px; display: inline-block;
+        }
+
+        /* =========================================
+           STYLE 5: The Dark Scroll (远山淡影·月夜) [新增]
+           ========================================= */
+        .style-scroll-dark {
+            background: #222831; /* 深炭灰背景 */
+            background-image: url("data:image/svg+xml,%3Csvg width='200' height='200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+            display: flex; justify-content: center; align-items: center; position: relative;
+        }
+        /* 夜晚山峦 */
+        .m1-d { width: 60%; height: 150px; bottom: -20px; left: -10%; background: #30475e; z-index: 3; }
+        .m2-d { width: 80%; height: 200px; bottom: -40px; right: -20%; background: #395b78; z-index: 2; }
+        .m3-d { width: 40%; height: 120px; bottom: -10px; left: 40%; background: #4f6f8f; z-index: 1; filter: blur(4px); opacity: 0.6;}
+
+        .style-scroll-dark .quote {
+            font-family: 'Zhi Mang Xing', cursive;
+            font-size: 32px; color: #e0e0e0; /* 浅色文字 */
+            text-shadow: 0 0 5px rgba(255,255,255,0.2);
+            line-height: 1.6; letter-spacing: 2px; font-weight: 400;
+            text-align: center;
+        }
+        .style-scroll-dark .author-box {
+            border-top: 1px solid #7a8b9c; padding-top: 15px;
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+        }
+        .style-scroll-dark .author {
+            font-family: 'Zhi Mang Xing', cursive; font-size: 18px; color: #b0c4de;
+        }
+        .chop-dark {
+            width: 24px; height: 24px; border: 2px solid #d9534f; color: #d9534f;
+            font-size: 12px; display: flex; justify-content: center; align-items: center;
+            font-family: 'Noto Serif SC', serif; border-radius: 4px; background: rgba(0,0,0,0.3);
+        }
+
+        /* =========================================
+           STYLE 6: The Midnight Floral (复古花园·午夜) [新增]
+           ========================================= */
+        .style-floral-dark {
+            background: #0f1a15; /* 墨绿背景 */
+            padding: 20px; display: flex; align-items: center; justify-content: center;
+        }
+        .floral-frame-outer-d {
+            width: 100%; height: 100%; border: 2px solid #c0b283; /* 暗金边框 */
+            position: relative; display: flex; align-items: center; justify-content: center;
+        }
+        .floral-frame-inner-d {
+            position: absolute; top: 10px; bottom: 10px; left: 10px; right: 10px;
+            border: 1px solid #2c4c3b;
+        }
+        .flower-d {
+            position: absolute; width: 80px; height: 80px;
+            background: radial-gradient(circle, rgba(75,0,130,0.4) 20%, transparent 20%),
+                        radial-gradient(circle, rgba(0,0,128,0.4) 20%, transparent 20%);
+            background-position: 0 0, 40px 40px; background-size: 20px 20px;
+            opacity: 0.6; filter: blur(1px);
+        }
+        .floral-content-d {
+            z-index: 5; background: #1a2620; padding: 30px 60px; text-align: center;
+            border: 1px solid #2c4c3b; box-shadow: 0 15px 30px rgba(0,0,0,0.5); max-width: 70%;
+        }
+        .style-floral-dark .quote {
+            font-family: 'Great Vibes', cursive; font-size: 32px;
+            color: #f0e6d2; /* 奶油金 */
+            text-shadow: 0 2px 2px rgba(0,0,0,0.3);
+        }
+        .style-floral-dark .quote-body {
+             font-family: 'Playfair Display', serif; font-size: 20px;
+             color: #cccccc; margin-top: 10px; font-style: italic;
+        }
+        .style-floral-dark .author {
+            font-family: serif; font-size: 12px; margin-top: 20px;
+            color: #888; text-transform: uppercase; letter-spacing: 2px;
+            border-top: 1px solid #2c4c3b; padding-top: 10px; display: inline-block;
+        }
+
+    </style>
+</head>
+<body>
+
+    <h1>书摘卡设计画廊 (6款)</h1>
+
+    <div class="gallery">
+        
+        <div class="card-wrapper">
+            <h2>No.1 奢华流金 (Gatsby Style)</h2>
+            <div class="card style-deco">
+                <div class="deco-corner dc-tl"></div>
+                <div class="deco-corner dc-tr"></div>
+                <div class="deco-corner dc-bl"></div>
+                <div class="deco-corner dc-br"></div>
+                
+                <div class="deco-content">
+                    <div class="quote">
+                        "Whomever you become, whatever you make yourself into, that is who you always were."
+                    </div>
+                    <div class="author">
+                        Tara Westover
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card-wrapper">
+            <h2>No.2 远山淡影 (Light Scroll)</h2>
+            <div class="card style-scroll">
+                <div class="mountains">
+                    <div class="mtn m1"></div>
+                    <div class="mtn m2"></div>
+                    <div class="mtn m3"></div>
+                </div>
+                
+                <div class="scroll-content">
+                    <div class="quote">
+                        人生海海<br>山山而川<br>不过尔尔
+                    </div>
+                    <div class="author-box">
+                        <div class="author">麦家 · 人生海海</div>
+                        <div class="chop">命</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card-wrapper">
+            <h2>No.3 魔法车票 (Enchanted Ticket)</h2>
+            <div class="card style-magic">
+                <div class="magic-border">
+                    <div class="corner-ornament co-tl"></div>
+                    <div class="corner-ornament co-tr"></div>
+                    <div class="corner-ornament co-bl"></div>
+                    <div class="corner-ornament co-br"></div>
+                    
+                    <div class="sparkle" style="top:20%; left:10%;"></div>
+                    <div class="sparkle" style="top:80%; left:90%; animation-delay: 1s;"></div>
+                    
+                    <div class="magic-content">
+                        <div class="quote">
+                            "It does not do to dwell on dreams and forget to live."
+                        </div>
+                        <div class="author">
+                            — Albus Dumbledore
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card-wrapper">
+            <h2>No.4 复古花园 (Light Garden)</h2>
+            <div class="card style-floral">
+                <div class="floral-frame-outer">
+                    <div class="flower f-tl"></div>
+                    <div class="flower f-br"></div>
+                    <div class="floral-frame-inner"></div>
+                    
+                    <div class="floral-content">
+                        <div class="quote">
+                            There is a crack, a crack in everything.<br>
+                        </div>
+                        <div class="quote-body">
+                            That's how the light gets in.
+                        </div>
+                        <div class="author">
+                            Leonard Cohen
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card-wrapper">
+            <h2>No.5 远山淡影·月夜 (Dark Scroll)</h2>
+            <div class="card style-scroll-dark">
+                <div class="mountains">
+                    <div class="mtn m1-d"></div>
+                    <div class="mtn m2-d"></div>
+                    <div class="mtn m3-d"></div>
+                </div>
+                
+                <div class="scroll-content">
+                    <div class="quote">
+                        寒冷从来不是用来考验人的<br>而是用来让人寻找温暖的
+                    </div>
+                    <div class="author-box">
+                        <div class="author">李娟 · 冬牧场</div>
+                        <div class="chop-dark">冬</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card-wrapper">
+            <h2>No.6 复古花园·午夜 (Dark Floral)</h2>
+            <div class="card style-floral-dark">
+                <div class="floral-frame-outer-d">
+                    <div class="flower-d f-tl"></div>
+                    <div class="flower-d f-br"></div>
+                    <div class="floral-frame-inner-d"></div>
+                    
+                    <div class="floral-content-d">
+                        <div class="quote">
+                            It is the time you have wasted for your rose...
+                        </div>
+                        <div class="quote-body">
+                            that makes your rose so important.
+                        </div>
+                        <div class="author">
+                            The Little Prince
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+</body>
+</html>

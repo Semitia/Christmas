@@ -200,3 +200,226 @@ input:checked + .slider {
 input:checked + .slider:before {
     transform: translateX(26px);
 }
+
+/* css/style.css */
+
+/* 蒙版容器 */
+.overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(8px);
+    z-index: 1000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    opacity: 1;
+    transition: opacity 0.8s ease;
+}
+
+.overlay.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* 指南卡片 */
+.instruction-card {
+    background: rgba(15, 18, 21, 0.95);
+    border: 1px solid var(--gold);
+    padding: 40px;
+    border-radius: 8px;
+    text-align: center;
+    max-width: 600px;
+    box-shadow: 0 0 50px rgba(212, 175, 55, 0.2);
+    transform: translateY(0);
+    transition: transform 0.8s ease;
+}
+
+.hidden .instruction-card {
+    transform: translateY(20px);
+}
+
+.instruction-card h2 {
+    font-family: 'Cinzel', serif;
+    color: var(--gold);
+    font-size: 2rem;
+    margin-bottom: 30px;
+    letter-spacing: 2px;
+}
+
+/* 两列布局 */
+.instruction-grid {
+    display: flex;
+    gap: 40px;
+    margin-bottom: 40px;
+    text-align: left;
+}
+
+.inst-col {
+    flex: 1;
+}
+
+.inst-col h3 {
+    color: #fff;
+    font-size: 14px;
+    border-bottom: 1px solid #333;
+    padding-bottom: 10px;
+    margin-bottom: 15px;
+    letter-spacing: 1px;
+}
+
+.inst-col .note {
+    font-size: 10px;
+    color: #666;
+    margin-top: -10px;
+    margin-bottom: 15px;
+    font-style: italic;
+}
+
+.inst-col ul {
+    list-style: none;
+    padding: 0;
+}
+
+.inst-col li {
+    margin-bottom: 12px;
+    color: #ccc;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.inst-col li span {
+    color: var(--gold);
+    font-weight: bold;
+    min-width: 120px;
+}
+
+.inst-col li small {
+    color: #888;
+    text-transform: uppercase;
+    font-size: 10px;
+    letter-spacing: 1px;
+}
+
+/* 开始按钮 */
+.btn-start {
+    background: transparent;
+    border: 1px solid var(--gold);
+    color: var(--gold);
+    padding: 12px 40px;
+    font-family: 'Cinzel', serif;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.3s;
+    letter-spacing: 2px;
+}
+
+.btn-start:hover {
+    background: var(--gold);
+    color: #000;
+    box-shadow: 0 0 20px rgba(212, 175, 55, 0.6);
+}
+
+/* 移动端适配 */
+@media (max-width: 600px) {
+    .instruction-grid {
+        flex-direction: column;
+        gap: 20px;
+    }
+}
+
+/* css/style.css 末尾 - 替换之前的 instruction-card 相关样式 */
+
+/* 1. 卡片变窄，不再那么宽大松散 */
+.instruction-card {
+    max-width: 600px !important; /* 从 900px 改为 700px */
+    width: 90%; /* 移动端适配 */
+    padding: 50px 40px !important; /* 调整内边距 */
+    background: rgba(10, 12, 15, 0.95);
+    border: 1px solid var(--gold);
+    box-shadow: 0 0 60px rgba(212, 175, 55, 0.15);
+}
+
+/* 2. 标题微调 */
+.instruction-card h2 {
+    font-family: 'Cinzel', serif;
+    color: var(--gold);
+    font-size: 3.2rem !important; /*稍微调小一点点，更精致 */
+    margin-bottom: 30px;
+    letter-spacing: 4px;
+    text-shadow: 0 0 20px rgba(212, 175, 55, 0.4);
+}
+
+/* 3. 布局调整：两列更紧凑，中间加个分割线 */
+.instruction-grid {
+    display: flex;
+    justify-content: center; /* 整体居中 */
+    gap: 40px; /* 减小间距 */
+    margin-bottom: 30px;
+    position: relative;
+}
+
+/* 给两列中间加一条细微的分割线，增加对齐感 */
+.instruction-grid::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 10px;
+    bottom: 10px;
+    width: 1px;
+    background: rgba(212, 175, 55, 0.2);
+}
+
+.inst-col {
+    flex: 1;
+    display: flex; /* 使用 flex 让内部元素对齐 */
+    flex-direction: column;
+    align-items: center; /* 让标题和列表整体在列内居中 */
+}
+
+.inst-col h3 {
+    text-align: center;
+    width: 100%;
+}
+
+.inst-col ul {
+    padding: 0;
+    margin: 0;
+    /* 列表左对齐，但在列中居中，这样最好看 */
+    display: inline-block; 
+}
+
+/* 4. 列表项对齐 */
+.inst-col li {
+    white-space: nowrap !important;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start; /* 内部内容左对齐 */
+    gap: 15px;
+    margin-bottom: 12px;
+    width: 100%;
+}
+
+.inst-col li span {
+    color: var(--gold);
+    font-weight: bold;
+    /* 固定宽度缩小一点，因为卡片变窄了 */
+    min-width: 140px; 
+    text-align: right; /* [关键] 标签右对齐，说明左对齐，形成中缝对齐效果 */
+    font-size: 13px;
+}
+
+.inst-col li small {
+    color: #999;
+    font-size: 11px;
+    letter-spacing: 1px;
+    text-align: left;
+}
+
+/* 移动端去分割线 */
+@media (max-width: 768px) {
+    .instruction-grid::after { display: none; }
+    .inst-col li span { text-align: left; }
+}

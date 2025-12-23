@@ -65,6 +65,33 @@
         </div>
     </div>
 
+    <div id="instruction-overlay" class="overlay" style="display: none; opacity: 0; pointer-events: none; transition: opacity 1.5s ease;">
+        <div class="instruction-card">
+            <h2>Merry Christmas!</h2>
+            <div class="instruction-grid">
+                <div class="inst-col">
+                    <h3>MOUSE & TOUCH</h3>
+                    <ul>
+                        <li><span>DRAG / SWIPE</span> <small>ROTATE TREE</small></li>
+                        <li><span>SCROLL / PINCH</span> <small>SCATTER & GATHER</small></li>
+                        <li><span>CLICK / TAP</span> <small>READ WISHES</small></li>
+                    </ul>
+                </div>
+                <div class="inst-col">
+                    <h3>HAND GESTURES</h3>
+                    
+                    <ul>
+                        <li><span>FIST</span> <small>FORM TREE</small></li>
+                        <li><span>OPEN HAND</span> <small>SCATTER STARS</small></li>
+                        <li><span>PINCH</span> <small>FOCUS RANDOM</small></li>
+                    </ul>
+                    <div class="note">(Requires Webcam)</div>
+                </div>
+            </div>
+            <button id="start-btn" class="btn-start">START EXPERIENCE</button>
+        </div>
+    </div>
+
     <div id="webcam-container">
         <video id="webcam" autoplay playsinline></video>
         <canvas id="cv-canvas"></canvas>

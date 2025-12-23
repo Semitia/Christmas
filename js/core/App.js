@@ -30,17 +30,37 @@ export class App {
     }
 
     async init() {
-        await this.vision.init();
-        // Add default photo
-        // this.addPhoto(AssetFactory.createDefaultPhoto());
-        
-        // Hide loader
+        // 1. 隐藏 Loading (移到这里，确保无论摄像头成功与否都会执行)
         const loader = document.getElementById('loader');
         if (loader) {
             loader.style.opacity = 0;
             setTimeout(() => loader.remove(), 1000);
         }
         
+        // 2. 绑定开始按钮
+        const startBtn = document.getElementById('start-btn');
+        const overlay = document.getElementById('instruction-overlay');
+        
+        if (startBtn && overlay) {
+            startBtn.addEventListener('click', () => {
+                overlay.style.opacity = 0;
+                overlay.style.pointerEvents = 'none';
+                setTimeout(() => overlay.remove(), 1500); 
+            });
+
+            // 延迟浮现
+            setTimeout(() => {
+                // [核心修复 2] 配合 display: none 使用
+                overlay.style.display = 'flex'; // 先把它摆出来
+                
+                // 强制浏览器重绘 (Reflow)，确保 opacity 动画能触发
+                void overlay.offsetWidth; 
+                
+                overlay.style.opacity = 1;
+                overlay.style.pointerEvents = 'auto';
+            }, 2500);
+        }
+
         STATE.isLoaded = true;
         this.animate();
     }
@@ -56,8 +76,13 @@ export class App {
 
         // Scene & Camera
         this.scene = new THREE.Scene();
+
         this.camera = new THREE.PerspectiveCamera(50, window.innerWidth/window.innerHeight, 0.1, 200);
         this.camera.position.set(0, 2, 50);
+        // [核心修改 1] 初始相机位置：放得非常远和高，制造宏大的入场感
+        // this.camera = new THREE.PerspectiveCamera(50, window.innerWidth/window.innerHeight, 0.1, 200);
+        // this.camera.position.set(0, 60, 120); // <--- 起始位置
+        // this.camera.lookAt(0, 15, 0);
 
         // Environment
         const pmremGenerator = new THREE.PMREMGenerator(this.renderer);
@@ -164,6 +189,7 @@ export class App {
 
         // 1. 创建星星 (保持之前的封装)
         this.createStar();
+        // this.createRibbon(); // 光带
 
         // 2. 准备几何体 (Shared Geometries)
         const boxGeo = new THREE.BoxGeometry(0.5, 0.5, 0.5);
@@ -306,29 +332,46 @@ export class App {
         );
     }
 
-    setupModeSwitch() {
+setupModeSwitch() {
         const toggle = document.getElementById('mode-toggle');
         const statusText = document.getElementById('status-text');
         
-        // 默认状态设置 (Mouse)
+        // 默认状态
         toggle.checked = false; 
         STATE.inputMode = 'MOUSE';
         statusText.innerText = "MODE: MOUSE / TOUCH";
 
-        toggle.addEventListener('change', (e) => {
+        toggle.addEventListener('change', async (e) => {
             if (e.target.checked) {
+                // [核心修改] 用户切换到 HAND 模式了，现在才开始请求权限
                 STATE.inputMode = 'HAND';
                 statusText.innerText = "INITIALIZING CAMERA...";
-                // 只有切换到 Hand 模式才去激活摄像头，节省性能
+                
+                // 检查是否已经初始化过
                 if (!this.vision.isActive) {
-                    this.vision.init().then(success => {
-                        if(success) this.vision.isActive = true;
-                    });
+                    try {
+                        // 动态请求权限
+                        await this.vision.init();
+                        this.vision.isActive = true;
+                        statusText.innerText = "MODE: HAND GESTURES";
+                    } catch (error) {
+                        console.error("Camera denied:", error);
+                        statusText.innerText = "CAMERA ERROR - CHECK PERMISSIONS";
+                        // 失败了就把开关拨回去
+                        e.target.checked = false;
+                        STATE.inputMode = 'MOUSE';
+                        alert("Please allow camera access to use Hand Gestures.");
+                    }
+                } else {
+                    // 已经初始化过了，直接切状态
+                    statusText.innerText = "MODE: HAND GESTURES";
                 }
+
             } else {
+                // 切回鼠标
                 STATE.inputMode = 'MOUSE';
                 statusText.innerText = "MODE: MOUSE / TOUCH";
-                // 摄像头不需要关闭，但我们会忽略它的数据
+                // 我们不关闭摄像头流，为了下次切换能秒开，但会停止处理数据
             }
         });
     }
@@ -395,7 +438,17 @@ export class App {
     createCards() {
         const cardCount = CONFIG.particles.counts.card;
         const cardDims = CONFIG.cardConfig; // { width, height, thickness }
-        
+        // 背景色配置表 (对应 AssetFactory 里的 6 种样式)
+        // 我们用这些颜色来制作卡片的背面和侧面，做到“表里如一”
+        const styleColors = [
+            0x0f1215, // 0: Deco (黑金)
+            // 0xe6e4dc, // 1: Scroll (米色)
+            0x192a40, // 2: Magic (深蓝 - 取渐变中间色)
+            // 0xe8e8e8, // 3: Floral (灰白)
+            0x222831, // 4: Dark Scroll (深灰)
+            0x0f1a15  // 5: Dark Floral (墨绿)
+        ];
+
         // 贺卡几何体 (横版)
         const cardGeo = new THREE.BoxGeometry(cardDims.width, cardDims.height, cardDims.thickness);
 
@@ -436,8 +489,17 @@ export class App {
                 emissiveIntensity: 0 // 确保不发光
             });
 
-            // 材质数组：右, 左, 上, 下, 前, 后 (假设Z+是前)
-            const materials = [sideMat, sideMat, sideMat, sideMat, faceMat, sideMat];
+            // 2. [核心修改] 背面与侧面材质 (Back & Side)
+            // 直接从配色表中取色，不再是一刀切的白色或黑色
+            const bgColor = styleColors[styleIndex];
+            const bodyMat = new THREE.MeshStandardMaterial({ 
+                color: bgColor, 
+                roughness: 1.0, 
+                metalness: 0.0 
+            });
+
+            // Front 用 faceMat (有字), 其他面全部用 bodyMat (同色系纯色)
+            const materials = [bodyMat, bodyMat, bodyMat, bodyMat, faceMat, bodyMat];
 
             const mesh = new THREE.Mesh(cardGeo, materials);
 
@@ -471,6 +533,63 @@ export class App {
             // 标记用于点击聚焦
             mesh.userData.isFocusTarget = false; 
         }
+    }
+
+    // [新增] 创建螺旋光带的方法
+    createRibbon() {
+        const cfg = CONFIG.ribbon;
+        if (!cfg.show) return;
+
+        const points = [];
+        const heightHalf = cfg.height / 2;
+        const count = cfg.segments;
+
+        // 生成螺旋路径点
+        for (let i = 0; i <= count; i++) {
+            // t 从 0 (底部) 到 1 (顶部)
+            const t = i / count;
+            
+            // 角度：随 t 增加而旋转 turns 圈
+            const angle = t * cfg.turns * Math.PI * 2;
+            
+            // 半径：从底部的宽半径线性插值到顶部的窄半径
+            const radius = THREE.MathUtils.lerp(cfg.radiusBottom, cfg.radiusTop, t);
+            
+            // 高度：从下到上
+            const y = THREE.MathUtils.lerp(-heightHalf, heightHalf, t);
+            
+            // 计算 X 和 Z 坐标
+            const x = radius * Math.cos(angle);
+            const z = radius * Math.sin(angle);
+            
+            points.push(new THREE.Vector3(x, y, z));
+        }
+
+        // 1. 创建 3D 曲线
+        const curve = new THREE.CatmullRomCurve3(points);
+        
+        // 2. 沿着曲线生成管道几何体
+        // TubeGeometry(path, tubularSegments, radius, radialSegments, closed)
+        const tubeGeo = new THREE.TubeGeometry(curve, count, cfg.thickness, 8, false);
+
+        // 3. 创建发光材质
+        const tubeMat = new THREE.MeshStandardMaterial({
+            color: cfg.color,
+            emissive: cfg.emissive,
+            emissiveIntensity: cfg.intensity, // 高强度发光
+            roughness: 0.3,
+            metalness: 0.8, // 稍微带点金属质感，反光更好看
+            side: THREE.DoubleSide
+        });
+
+        this.ribbonMesh = new THREE.Mesh(tubeGeo, tubeMat);
+        
+        // 光带也可以投射和接收阴影，增加立体感
+        this.ribbonMesh.castShadow = true;
+        this.ribbonMesh.receiveShadow = true;
+
+        // 将光带加入到 mainGroup，这样它会随着树一起旋转
+        this.mainGroup.add(this.ribbonMesh);
     }
 
     addPhoto(texture) {
@@ -612,6 +731,44 @@ export class App {
         
         const time = performance.now() * 0.001;
         const dt = 0.016;
+
+        // // ===========================
+        // // [新增] 开场动画逻辑 (Intro Sequence)
+        // // ===========================
+        // if (STATE.isIntro) {
+        //     // 1. 目标位置：(0, 12, 50) 
+        //     // y=12 比原来的 y=2 更舒服，正对树干中心
+        //     const targetPos = new THREE.Vector3(0, 2, 50);
+            
+        //     // 2. 运镜速度：0.05 (比之前的 0.02 快一倍多，更加果断)
+        //     this.camera.position.lerp(targetPos, 0.04);
+            
+        //     // 3. [核心修复] 实时跟焦
+        //     // 每一帧都让相机盯着树的中心 (高度 15 的位置)
+        //     // 这样相机会随着下降自动抬头，解决“看歪/看地”的问题
+        //     this.camera.lookAt(0, 15, 0);
+            
+        //     // 4. 自转展示
+        //     this.mainGroup.rotation.y += 0.015;
+
+        //     // 5. [优化] 结束判断
+        //     // 放宽阈值到 55 (只要接近了就直接吸附)，避免最后几毫米的漫长等待
+        //     if (this.camera.position.z < 55) {
+        //         STATE.isIntro = false;
+                
+        //         // 强制吸附到完美的最终位置
+        //         this.camera.position.copy(targetPos);
+        //         this.camera.lookAt(0, 15, 0);
+        //         this.mainGroup.rotation.y = 0;
+                
+        //         // 立即显示菜单
+        //         const overlay = document.getElementById('instruction-overlay');
+        //         if (overlay) overlay.classList.remove('hidden');
+        //     }
+            
+        //     this.composer.render();
+        //     return; 
+        // }
 
         // [修改] 视觉识别只有在 HAND 模式下才运行
         if (STATE.inputMode === 'HAND') {

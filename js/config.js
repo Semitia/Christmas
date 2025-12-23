@@ -62,6 +62,19 @@ export const CONFIG = {
         thickness: 0.05
     },
 
+    // [新增] 光带配置
+    ribbon: {
+        show: true,          // 开关
+        color: 0xffd700,     // 本体颜色 (金色)
+        emissive: 0xffaa00,  // 发光颜色 (暖橙光)
+        intensity: 2.5,      // 发光强度 (配合 Bloom 产生光晕)
+        thickness: 0.08,     // 灯带粗细 (细一点比较精致)
+        turns: 6.5,          // 缠绕圈数
+        radiusTop: 0.8,      // 顶部半径 (比树尖稍宽)
+        radiusBottom: 6.5,   // 底部半径 (比树底稍宽)
+        height: 30,          // 总高度 (略高于树高 28)
+        segments: 300        // 曲线平滑度
+    },
     // [新增] 光照系统配置
     // lighting: {
     //     // 曝光度：控制整体画面明暗。

@@ -423,3 +423,41 @@ input:checked + .slider:before {
     .instruction-grid::after { display: none; }
     .inst-col li span { text-align: left; }
 }
+
+
+/* css/style.css 末尾新增 */
+
+/* === 移动端 UI 专属优化 === */
+@media (max-width: 600px) {
+    /* 1. 缩小底部控制栏整体 */
+    .controls {
+        bottom: 30px; /* 稍微靠下一点 */
+        gap: 5px; /* 减小间距 */
+    }
+
+    /* 2. 大幅缩小按钮尺寸 */
+    .btn {
+        padding: 8px 16px !important; /* 减小内边距 */
+        font-size: 12px !important;   /* 减小字号 */
+        letter-spacing: 1px;
+    }
+
+    /* 3. 特别针对那个长文字的刷新按钮 */
+    #refresh-btn {
+        font-size: 11px !important; 
+        padding: 6px 12px !important;
+        opacity: 0.8; /* 稍微透明一点，不抢视觉 */
+    }
+
+    /* 4. 标题也稍微改小一点，避免遮挡树 */
+    h1 {
+        font-size: 36px !important;
+        top: 40px;
+    }
+    
+    /* 5. 状态文字改小 */
+    .status-badge {
+        font-size: 10px;
+        padding: 3px 10px;
+    }
+}

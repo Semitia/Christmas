@@ -626,13 +626,28 @@ setupModeSwitch() {
                 st.innerText = "MODE: SCATTER STARS";
             }
         } else if (type === 'PINCH') {
-            if (STATE.mode !== CONFIG.modes.FOCUS && this.photos.length > 0) {
+            // [核心修复] 以前是判断 this.photos，现在要改回去找贺卡
+            // 1. 筛选出所有贺卡
+            const cards = this.particles.filter(p => p.type === 'CARD');
+            
+            if (STATE.mode !== CONFIG.modes.FOCUS && cards.length > 0) {
                 STATE.mode = CONFIG.modes.FOCUS;
-                // Select random photo
-                this.photos.forEach(p => p.userData.isFocusTarget = false);
-                const target = this.photos[Math.floor(Math.random() * this.photos.length)];
-                target.userData.isFocusTarget = true;
-                st.innerText = "MODE: MEMORY FOCUS";
+                
+                // 2. 清除之前的聚焦状态
+                this.particles.forEach(p => {
+                   if(p.mesh) p.mesh.userData.isFocusTarget = false;
+                });
+
+                // 3. 随机选一张贺卡
+                const targetP = cards[Math.floor(Math.random() * cards.length)];
+                
+                // 4. 设置聚焦状态
+                if (targetP && targetP.mesh) {
+                    targetP.mesh.userData.isFocusTarget = true;
+                    STATE.focusTarget = targetP.mesh; // 同步全局状态
+                }
+                
+                st.innerText = "MODE: READING WISH";
             }
         }
     }

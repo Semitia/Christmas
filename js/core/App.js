@@ -560,42 +560,50 @@ export class App {
 
     // [新增] 刷新贺卡逻辑
     refreshWishes() {
-        // 1. 找到所有现存的卡片
         const cards = this.particles.filter(p => p.type === 'CARD');
-        
-        if (cards.length === 0) return; // 防止重复点击
+        if (cards.length === 0) return;
 
-        // 2. 离场动画：将它们的目标缩放设为 0
-        // Particle.update 会自动处理插值，让它们缩小
+        // 1. 离场动画
         cards.forEach(p => {
-            p.baseScale = 0; // 这是一个自定义标记，告诉 update 把它缩没了
-            // 为了防止 FOCUS 模式干扰，强制设为 SCATTER 行为
-            p.type = 'DYING_CARD'; // 临时改个类型，避免被正常逻辑干扰
+            p.baseScale = 0;
+            p.type = 'DYING_CARD';
         });
 
-        // 3. 等待动画完成后 (600ms)，清理并重新生成
+        // 2. 清理与重生
         setTimeout(() => {
-            // 清理旧资源
+            // 清理 Three.js 资源
             cards.forEach(p => {
                 this.mainGroup.remove(p.mesh);
                 if (p.mesh.geometry) p.mesh.geometry.dispose();
+
+                // [核心修复] 正确处理材质数组和纹理清理
                 if (p.mesh.material) {
-                    if (Array.isArray(p.mesh.material)) {
-                        p.mesh.material.forEach(m => m.dispose());
-                    } else {
-                        p.mesh.material.dispose();
-                    }
+                    // 统一转成数组处理，兼容单个材质和材质数组
+                    const materials = Array.isArray(p.mesh.material) ? p.mesh.material : [p.mesh.material];
+                    
+                    materials.forEach(m => {
+                        // 先释放纹理 (如果有)
+                        if (m.map) m.map.dispose();
+                        // 再释放材质
+                        m.dispose();
+                    });
                 }
-                // 也要释放纹理，防止内存泄漏
-                // 这里简化处理，严谨的话需要遍历 material map dispose
             });
 
-            // 从粒子数组中移除
+            // 过滤数组 (这一步生成了新数组，导致 InputManager 引用失效)
             this.particles = this.particles.filter(p => p.type !== 'DYING_CARD');
 
-            // 重新生成
+            // 生成新卡片
             this.createCards();
 
+            // ===============================================
+            // [核心修复] 更新 InputManager 中的粒子列表引用
+            // ===============================================
+            // 之前因为上面报错崩溃，这一行没执行，所以点不中
+            if (this.inputManager) {
+                this.inputManager.particles = this.particles;
+            }
+            
         }, 600);
     }
 

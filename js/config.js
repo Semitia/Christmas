@@ -25,7 +25,7 @@ export const CONFIG = {
             gem: 40,
             cane: 25,       // 拐杖糖数量
             bulb: 20,
-            card: 10,
+            card:10,
         },
         dustCount: 2000,  // 灰尘数量
         snow: {

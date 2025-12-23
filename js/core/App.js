@@ -545,7 +545,7 @@ export class App {
         }
 
         // 粒子更新逻辑 (这部分不需要变，Particle.js 会根据 STATE.mode 自动处理)
-        this.particles.forEach(p => p.update(dt, time));
+        this.particles.forEach(p => p.update(dt, time, this.camera));
 
         if(this.dustSystem) {
             this.dustSystem.rotation.y = -time * 0.05;

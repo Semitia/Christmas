@@ -72,64 +72,93 @@ export class Particle {
         );
     }
 
-    // 注意：update 方法现在多接收一个 time 参数用于计算漂浮
-    update(dt, time) {
+    update(dt, time, camera) {
         let target = new THREE.Vector3();
 
-        // 读取全局状态
         const currentMode = STATE.mode;
-        // 如果你的 STATE.focusTarget 还没实现，暂时可以忽略，或者在 STATE 里加一个
-        const focusTargetMesh = STATE.focusTarget || null;
+        
+        // 判断当前粒子是否是聚焦目标
+        // 兼容 mesh.userData (InputManager 设置) 和 STATE.focusTarget
+        const isTarget = (this.mesh.userData.isFocusTarget || STATE.focusTarget === this.mesh);
 
+        // ===========================
+        // 1. 目标位置计算 (Position Logic)
+        // ===========================
         if (currentMode === CONFIG.modes.TREE) {
             target.copy(this.posTree);
             
-            // [核心修改 3] 新增漂浮呼吸效果
-            // 只有在树模式下才漂浮
-            const floatY = Math.sin(time * this.floatSpeed + this.floatOffset) * 0.2; // 上下浮动
-            const floatX = Math.cos(time * this.floatSpeed * 0.5 + this.floatOffset) * 0.05; // 微小水平摆动
+            // 树模式漂浮呼吸效果
+            const floatY = Math.sin(time * this.floatSpeed + this.floatOffset) * 0.2; 
+            const floatX = Math.cos(time * this.floatSpeed * 0.5 + this.floatOffset) * 0.05; 
             
             target.y += floatY;
             target.x += floatX;
             target.z += floatX;
 
-            // 树模式下微弱自转
+            // 树模式微弱自转
             this.mesh.rotation.x += this.spinSpeed.x * 0.1 * dt;
             this.mesh.rotation.y += this.spinSpeed.y * 0.1 * dt;
 
         } else if (currentMode === CONFIG.modes.SCATTER) {
             target.copy(this.posScatter);
             
-            // 散开模式下快速自转
+            // 散开模式快速自转
             this.mesh.rotation.x += this.spinSpeed.x * dt;
             this.mesh.rotation.y += this.spinSpeed.y * dt;
             this.mesh.rotation.z += this.spinSpeed.z * dt;
 
         } else if (currentMode === CONFIG.modes.FOCUS) {
-            if (this.mesh.userData.isFocusTarget) { 
-                // 简单的聚焦逻辑：飞到相机前
-                target.set(0, 2, 35); 
-                this.mesh.lookAt(0, 2, 50); // 假设相机在 (0, 2, 50)
+            if (isTarget && camera) {
+                // 1. 计算【世界坐标】下的目标点：相机前方 12 米
+                const direction = new THREE.Vector3();
+                camera.getWorldDirection(direction);
+                const distance = 12.0;
+                const worldTarget = new THREE.Vector3().copy(camera.position).add(direction.multiplyScalar(distance));
+                
+                // 2. [核心修复] 将【世界坐标】转换为父容器（mainGroup）的【局部坐标】
+                // 这样无论树怎么旋转，卡片都会准确飞到相机眼前
+                if (this.mesh.parent) {
+                    this.mesh.parent.updateMatrixWorld(); // 确保父容器矩阵是最新的
+                    const invMatrix = new THREE.Matrix4().copy(this.mesh.parent.matrixWorld).invert();
+                    target.copy(worldTarget).applyMatrix4(invMatrix);
+                } else {
+                    target.copy(worldTarget);
+                }
+
+                // 3. 让卡片始终正对相机
+                // lookAt 默认接受世界坐标，Three.js 会自动处理父容器旋转的抵消
+                this.mesh.lookAt(camera.position);
+
             } else {
-                target.copy(this.posScatter); // 其他人散开
+                target.copy(this.posScatter);
             }
         }
 
-        // 移动插值
-        const lerpSpeed = (currentMode === CONFIG.modes.FOCUS && this.mesh.userData.isFocusTarget) ? 5.0 : 2.5; 
+        // ===========================
+        // 2. 移动插值 (Lerp)
+        // ===========================
+        // 聚焦时飞得快一点 (4.0)，平时慢一点 (2.5)
+        const lerpSpeed = (currentMode === CONFIG.modes.FOCUS && isTarget) ? 4.0 : 2.5; 
         this.mesh.position.lerp(target, lerpSpeed * dt);
 
-        // 缩放逻辑
+        // ===========================
+        // 3. 缩放逻辑 (Scale)
+        // ===========================
         let s = this.baseScale || 1.0;
         
         if (currentMode === CONFIG.modes.FOCUS) {
-            if (this.mesh.userData.isFocusTarget) s = 4.5;
-            else s = (this.baseScale || 1.0) * 0.8;
+             if (isTarget) {
+                 // 聚焦目标放大
+                 s = 2.5; 
+             } else {
+                 // 背景物体缩小，突出主体
+                 s = (this.baseScale || 1.0) * 0.5;
+             }
         } else if (currentMode === CONFIG.modes.SCATTER && (this.type === 'PHOTO' || this.type === 'CARD')) {
-            s = (this.baseScale || 1.0) * 2.5;
+             // 散开时，卡片和照片稍微放大方便寻找
+             s = (this.baseScale || 1.0) * 2.5;
         }
         
-        // 简单的缩放插值
         this.mesh.scale.lerp(new THREE.Vector3(s,s,s), 4*dt);
     }
 }

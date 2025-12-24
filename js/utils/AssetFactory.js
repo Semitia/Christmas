@@ -140,6 +140,101 @@ export class AssetFactory {
         return tex;
     }
 
+    // =========================================================
+    // [核心升级 - 修复版] 智能排版：修复了以italic等开头的字体无法解析大小的问题
+    // =========================================================
+    static drawTextGroup(ctx, w, h, text, author, fontQuote, fontAuthor, colorQuote, colorAuthor, gap = 80) {
+        // --- [修复关键点] 稳健地提取字体大小 ---
+        const getFontSize = (fontStr) => {
+            const match = fontStr.match(/(\d+)px/);
+            // 如果匹配到数字就用数字，否则给一个默认值 24 防止崩溃
+            return match ? parseInt(match[1]) : 24;
+        };
+
+        // --- 1. 处理正文 (Quote) ---
+        ctx.font = fontQuote;
+        const maxQuoteWidth = w * 0.72; 
+        const quoteBaseSize = getFontSize(fontQuote); // [使用新方法提取大小]
+        const quoteLineHeight = quoteBaseSize * 1.4;  // 现在可以正确计算了
+        
+        const words = text.split('');
+        let line = '';
+        const quoteLines = [];
+        for(let n = 0; n < words.length; n++) {
+            const testLine = line + words[n];
+            if (ctx.measureText(testLine).width > maxQuoteWidth && n > 0) {
+                quoteLines.push(line);
+                line = words[n];
+            } else {
+                line = testLine;
+            }
+        }
+        quoteLines.push(line);
+        const quoteBlockHeight = quoteLines.length * quoteLineHeight;
+
+        // --- 2. 处理作者 (Author) 智能折行逻辑 ---
+        ctx.font = fontAuthor;
+        const maxAuthorWidth = w * 0.65;
+        // 这里为了保险，也检查一下 fontAuthor 是否设置了正确的字体，避免 measureText 失效
+        if (!fontAuthor) ctx.font = '24px serif'; 
+        const authorWidth = ctx.measureText(author).width;
+        
+        let authorLines = [];
+        
+        // 判定：如果宽度超标 且 包含括号(通常是书名和作者的分隔符)
+        if (authorWidth > maxAuthorWidth && author.lastIndexOf(' (') > -1) {
+            const splitIndex = author.lastIndexOf(' (');
+            const part1 = author.substring(0, splitIndex); 
+            const part2 = author.substring(splitIndex);    
+            authorLines.push(part1);
+            authorLines.push(part2.trim()); 
+        } else {
+            authorLines.push(`— ${author} —`);
+        }
+
+        // 计算作者块高度
+        const authorBaseSize = getFontSize(fontAuthor); // [使用新方法提取大小]
+        const authorLineHeight = authorLines.length > 1 ? authorBaseSize * 1.3 : authorBaseSize * 1.2;
+        const authorBlockHeight = authorLines.length * authorLineHeight;
+
+        // --- 3. 垂直居中计算 ---
+        const totalBlockHeight = quoteBlockHeight + gap + authorBlockHeight;
+        // 如果计算出的高度有问题，就默认居中，防止报错
+        let currentY = isNaN(totalBlockHeight) ? h/2 : (h - totalBlockHeight) / 2 + quoteLineHeight / 2;
+
+        // --- 4. 绘制正文 ---
+        ctx.fillStyle = colorQuote;
+        ctx.font = fontQuote;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        
+        quoteLines.forEach(l => {
+            ctx.fillText(l, w/2, currentY);
+            currentY += quoteLineHeight;
+        });
+
+        // --- 5. 绘制作者 ---
+        currentY = currentY - quoteLineHeight + gap;
+        ctx.fillStyle = colorAuthor;
+        
+        authorLines.forEach((l, index) => {
+            if (authorLines.length > 1) {
+                if (index === 0) {
+                    ctx.font = fontAuthor; 
+                } else {
+                    // 第二行字体缩小 80%
+                    const newSize = Math.floor(authorBaseSize * 0.8);
+                    // 使用正则替换字体字符串中的像素值
+                    ctx.font = fontAuthor.replace(/\d+px/, `${newSize}px`); 
+                }
+            } else {
+                ctx.font = fontAuthor;
+            }
+            ctx.fillText(l, w/2, currentY);
+            currentY += authorLineHeight;
+        });
+    }
+    
     // --- 辅助：文字换行 ---
     static wrapText(ctx, text, x, y, maxWidth, lineHeight) {
         // 简单处理：中英文分开逻辑太复杂，这里按字符测量，虽然对英文单词切分不完美，但兼容性好
@@ -198,20 +293,28 @@ export class AssetFactory {
         // BL
         ctx.beginPath(); ctx.moveTo(20, h-20); ctx.lineTo(20+cSize, h-20); ctx.lineTo(20, h-20-cSize); ctx.fill();
 
-        // Text (Gradient Gold)
-        const grad = ctx.createLinearGradient(0, 0, w, 0);
-        grad.addColorStop(0, '#cfc09f'); grad.addColorStop(0.5, '#ffecb3'); grad.addColorStop(1, '#b3a076');
-        ctx.fillStyle = grad;
+        // // Text (Gradient Gold)
+        // const grad = ctx.createLinearGradient(0, 0, w, 0);
+        // grad.addColorStop(0, '#cfc09f'); grad.addColorStop(0.5, '#ffecb3'); grad.addColorStop(1, '#b3a076');
+        // ctx.fillStyle = grad;
         
-        ctx.font = '36px "Cinzel Decorative", serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        this.wrapText(ctx, text, w/2, h/2 - 20, w - 160, 50);
+        // ctx.font = '36px "Cinzel Decorative", serif';
+        // ctx.textAlign = 'center';
+        // ctx.textBaseline = 'middle';
+        // this.wrapText(ctx, text, w/2, h/2 - 20, w - 160, 50);
 
-        // Author
-        ctx.font = '16px sans-serif';
-        ctx.fillStyle = '#888';
-        ctx.fillText(author.toUpperCase(), w/2, h - 60);
+        // // Author
+        // ctx.font = '16px sans-serif';
+        // ctx.fillStyle = '#888';
+        // ctx.fillText(author.toUpperCase(), w/2, h - 60);
+        // [修改] 替换掉原本的 Gradient Gold Text 和 Author 部分
+        this.drawTextGroup(ctx, w, h, text, author, 
+            '36px "Cinzel Decorative", serif', // 正文
+            '30px "Cinzel", serif',            // 作者(变大)
+            '#f6e27a',                         // 正文色
+            '#b3a076',                         // 作者色
+            60                                 // 间距
+        );
     }
 
     // --- 模板 2: 远山淡影 (Oriental Scroll) ---
@@ -271,19 +374,27 @@ export class AssetFactory {
             ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI*2); ctx.fill();
         }
 
-        // Text
-        ctx.fillStyle = '#e0e0e0';
-        ctx.shadowColor = '#a8c0ff';
-        ctx.shadowBlur = 10;
-        ctx.font = 'italic 32px "Playfair Display", serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        this.wrapText(ctx, text, w/2, h/2 - 20, w - 140, 45);
+        // // Text
+        // ctx.fillStyle = '#e0e0e0';
+        // ctx.shadowColor = '#a8c0ff';
+        // ctx.shadowBlur = 10;
+        // ctx.font = 'italic 32px "Playfair Display", serif';
+        // ctx.textAlign = 'center';
+        // ctx.textBaseline = 'middle';
+        // this.wrapText(ctx, text, w/2, h/2 - 20, w - 140, 45);
         
-        ctx.shadowBlur = 0;
-        ctx.font = '18px "Cinzel Decorative", cursive';
-        ctx.fillStyle = '#d1d8e0';
-        ctx.fillText('— ' + author, w/2, h - 60);
+        // ctx.shadowBlur = 0;
+        // ctx.font = '18px "Cinzel Decorative", cursive';
+        // ctx.fillStyle = '#d1d8e0';
+        // ctx.fillText('— ' + author, w/2, h - 60);
+        this.drawTextGroup(ctx, w, h, text, author, 
+            'italic 36px "Playfair Display", serif', 
+            '30px "Cinzel Decorative", cursive', // 作者(变大)
+            '#e0e0e0', 
+            '#a8c0ff', 
+            50
+        );
+        ctx.shadowBlur = 0; // 记得重置
     }
 
     // --- 模板 4: 复古花园 (Vintage Floral) ---
@@ -351,34 +462,42 @@ export class AssetFactory {
         ctx.fillStyle = '#30475e';
         ctx.beginPath(); ctx.arc(w*0.3, h+100, 180, 0, Math.PI*2); ctx.fill();
         
-        // 4. 文字 (浅灰白)
-        ctx.fillStyle = '#e0e0e0';
-        ctx.shadowColor = 'rgba(255,255,255,0.2)';
-        ctx.shadowBlur = 5;
-        ctx.font = '40px "Zhi Mang Xing", cursive'; 
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        this.wrapText(ctx, text, w/2, h/2 - 20, w - 120, 60);
-        ctx.shadowBlur = 0; // 重置阴影
+        // // 4. 文字 (浅灰白)
+        // ctx.fillStyle = '#e0e0e0';
+        // ctx.shadowColor = 'rgba(255,255,255,0.2)';
+        // ctx.shadowBlur = 5;
+        // ctx.font = '40px "Zhi Mang Xing", cursive'; 
+        // ctx.textAlign = 'center';
+        // ctx.textBaseline = 'middle';
+        // this.wrapText(ctx, text, w/2, h/2 - 20, w - 120, 60);
+        // ctx.shadowBlur = 0; // 重置阴影
 
-        // 5. 作者与印章
-        ctx.font = '24px "Zhi Mang Xing", cursive';
-        ctx.fillStyle = '#b0c4de'; // 灰蓝
-        ctx.fillText(author, w/2, h - 50);
+        // // 5. 作者与印章
+        // ctx.font = '24px "Zhi Mang Xing", cursive';
+        // ctx.fillStyle = '#b0c4de'; // 灰蓝
+        // ctx.fillText(author, w/2, h - 50);
         
-        // 暗色印章
-        const chopX = w/2 + ctx.measureText(author).width/2 + 10;
-        ctx.fillStyle = 'rgba(0,0,0,0.3)'; // 背景深色半透
-        ctx.fillRect(chopX, h-65, 24, 24);
+        // // 暗色印章
+        // const chopX = w/2 + ctx.measureText(author).width/2 + 10;
+        // ctx.fillStyle = 'rgba(0,0,0,0.3)'; // 背景深色半透
+        // ctx.fillRect(chopX, h-65, 24, 24);
         
-        ctx.strokeStyle = '#d9534f';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(chopX, h-65, 24, 24);
+        // ctx.strokeStyle = '#d9534f';
+        // ctx.lineWidth = 2;
+        // ctx.strokeRect(chopX, h-65, 24, 24);
         
-        ctx.font = '14px serif';
-        ctx.fillStyle = '#d9534f';
-        ctx.textAlign = 'center';
-        ctx.fillText('冬', chopX + 12, h-53 + 5); // 稍微居中修正
+        // ctx.font = '14px serif';
+        // ctx.fillStyle = '#d9534f';
+        // ctx.textAlign = 'center';
+        // ctx.fillText('冬', chopX + 12, h-53 + 5); // 稍微居中修正
+        // [修改] 替换掉原本的文字和印章逻辑
+        this.drawTextGroup(ctx, w, h, text, author, 
+            '40px "Zhi Mang Xing", cursive', 
+            '34px "Zhi Mang Xing", cursive', // 作者(变大)
+            '#e0e0e0', 
+            '#b0c4de',
+            50
+        );
     }
 
     // ==========================================
@@ -421,213 +540,29 @@ export class AssetFactory {
         ctx.strokeStyle = '#2c4c3b';
         ctx.strokeRect(w/2 - (w*0.7)/2, h/2 - 100, w*0.7, 200);
 
-        // 5. 文字 (奶油金)
-        ctx.fillStyle = '#f0e6d2';
-        ctx.font = '40px "Great Vibes", cursive';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        // 阴影增加立体感
-        ctx.shadowColor = 'rgba(0,0,0,0.5)';
-        ctx.shadowBlur = 2;
-        this.wrapText(ctx, text, w/2, h/2 - 20, w - 160, 55);
-        ctx.shadowBlur = 0;
+        // // 5. 文字 (奶油金)
+        // ctx.fillStyle = '#f0e6d2';
+        // ctx.font = '40px "Great Vibes", cursive';
+        // ctx.textAlign = 'center';
+        // ctx.textBaseline = 'middle';
+        // // 阴影增加立体感
+        // ctx.shadowColor = 'rgba(0,0,0,0.5)';
+        // ctx.shadowBlur = 2;
+        // this.wrapText(ctx, text, w/2, h/2 - 20, w - 160, 55);
+        // ctx.shadowBlur = 0;
 
-        // 6. 作者
-        ctx.font = '16px serif';
-        ctx.fillStyle = '#888';
-        ctx.fillText(author.toUpperCase(), w/2, h - 50);
+        // // 6. 作者
+        // ctx.font = '16px serif';
+        // ctx.fillStyle = '#888';
+        // ctx.fillText(author.toUpperCase(), w/2, h - 50);
+        // [修改] 替换掉原本的 Text 和 Author
+        this.drawTextGroup(ctx, w, h, text, author, 
+            '40px "Great Vibes", cursive', 
+            '28px "Playfair Display", serif', // 作者(变大)
+            '#f0e6d2', 
+            '#cccccc',
+            40
+        );
     }
 
-    // // =========================================================
-    // // 贺卡绘制工厂
-    // // =========================================================
-    // static createCardTexture(text, author, styleIndex) {
-    //     const width = 800;
-    //     const height = 520; 
-    //     const canvas = document.createElement('canvas');
-    //     canvas.width = width;
-    //     canvas.height = height;
-    //     const ctx = canvas.getContext('2d');
-
-    //     // 根据索引选择模板 (你只用了4个，这里保持你的逻辑)
-    //     switch(styleIndex % 4) {
-    //         case 0: this.drawDecoStyle(ctx, width, height, text, author); break;
-    //         case 1: this.drawDarkScrollStyle(ctx, width, height, text, author); break; // Style 5
-    //         case 2: this.drawMagicStyle(ctx, width, height, text, author); break;
-    //         case 3: this.drawDarkFloralStyle(ctx, width, height, text, author); break; // Style 6
-    //     }
-
-    //     const tex = new THREE.CanvasTexture(canvas);
-    //     tex.colorSpace = THREE.SRGBColorSpace;
-    //     return tex;
-    // }
-
-    // // =========================================================
-    // // [核心新增] 通用文字排版方法：让正文和作者作为一个整体垂直居中
-    // // =========================================================
-    // static drawTextGroup(ctx, w, h, text, author, fontQuote, fontAuthor, colorQuote, colorAuthor, gap = 50) {
-    //     // 1. 预计算正文行数
-    //     ctx.font = fontQuote;
-    //     const maxWidth = w * 0.75; // 稍微宽一点
-    //     const lineHeight = parseInt(fontQuote) * 1.4;
-        
-    //     const words = text.split('');
-    //     let line = '';
-    //     const lines = [];
-    //     for(let n = 0; n < words.length; n++) {
-    //         const testLine = line + words[n];
-    //         if (ctx.measureText(testLine).width > maxWidth && n > 0) {
-    //             lines.push(line);
-    //             line = words[n];
-    //         } else {
-    //             line = testLine;
-    //         }
-    //     }
-    //     lines.push(line);
-        
-    //     // 2. 预计算总高度 (正文 + 间距 + 作者)
-    //     // 假设作者只有一行
-    //     const quoteHeight = lines.length * lineHeight;
-    //     const authorHeight = parseInt(fontAuthor) * 1.2;
-    //     const totalBlockHeight = quoteHeight + gap + authorHeight;
-
-    //     // 3. 计算起始 Y (让整个块垂直居中)
-    //     let currentY = (h - totalBlockHeight) / 2 + lineHeight/2; // 第一行的基线位置(大概)
-
-    //     // 4. 绘制正文
-    //     ctx.fillStyle = colorQuote;
-    //     ctx.font = fontQuote;
-    //     ctx.textAlign = 'center';
-    //     ctx.textBaseline = 'middle';
-        
-    //     // 如果需要阴影，需在外部设置，或者这里简单设置一下通用阴影
-    //     // ctx.shadowColor = 'rgba(0,0,0,0.3)'; ctx.shadowBlur = 4;
-
-    //     lines.forEach(l => {
-    //         ctx.fillText(l, w/2, currentY);
-    //         currentY += lineHeight;
-    //     });
-
-    //     // 5. 绘制作者 (紧跟正文下方)
-    //     // 回退半行高度因为循环里多加了一次，再加上 gap
-    //     currentY = currentY - lineHeight + gap; 
-        
-    //     ctx.fillStyle = colorAuthor;
-    //     ctx.font = fontAuthor;
-    //     ctx.fillText(`— ${author} —`, w/2, currentY);
-        
-    //     // 重置阴影
-    //     ctx.shadowBlur = 0;
-    // }
-
-    // // --- 模板 1: 奢华流金 (The Great Gatsby) ---
-    // static drawDecoStyle(ctx, w, h, text, author) {
-    //     // BG
-    //     ctx.fillStyle = '#0f1215'; ctx.fillRect(0, 0, w, h);
-    //     // Borders
-    //     ctx.strokeStyle = '#d4af37'; ctx.lineWidth = 4; ctx.strokeRect(20, 20, w-40, h-40);
-    //     ctx.strokeStyle = 'rgba(212, 175, 55, 0.5)'; ctx.lineWidth = 2; ctx.strokeRect(35, 35, w-70, h-70);
-    //     // Corners
-    //     ctx.fillStyle = '#d4af37'; const cSize = 60;
-    //     ctx.beginPath(); ctx.moveTo(20, 20); ctx.lineTo(20+cSize, 20); ctx.lineTo(20, 20+cSize); ctx.fill();
-    //     ctx.beginPath(); ctx.moveTo(w-20, 20); ctx.lineTo(w-20-cSize, 20); ctx.lineTo(w-20, 20+cSize); ctx.fill();
-    //     ctx.beginPath(); ctx.moveTo(w-20, h-20); ctx.lineTo(w-20-cSize, h-20); ctx.lineTo(w-20, h-20-cSize); ctx.fill();
-    //     ctx.beginPath(); ctx.moveTo(20, h-20); ctx.lineTo(20+cSize, h-20); ctx.lineTo(20, h-20-cSize); ctx.fill();
-
-    //     // [修改] 调用新排版
-    //     this.drawTextGroup(ctx, w, h, text, author, 
-    //         '36px "Cinzel Decorative", serif', // 正文
-    //         '30px "Cinzel", serif',            // [变大] 作者字号
-    //         '#f6e27a',                         // 正文色
-    //         '#b3a076',                         // 作者色
-    //         60                                 // 间距
-    //     );
-    // }
-
-    // // --- 模板 5: 远山淡影·月夜 (Dark Scroll + Moon) ---
-    // static drawDarkScrollStyle(ctx, w, h, text, author) {
-    //     // BG
-    //     ctx.fillStyle = '#222831'; ctx.fillRect(0, 0, w, h);
-
-    //     // Moon
-    //     ctx.save();
-    //     ctx.shadowColor = '#fdfbd3'; ctx.shadowBlur = 20; ctx.fillStyle = '#fdfbd3'; 
-    //     ctx.beginPath(); ctx.arc(w - 80, 80, 30, 0, Math.PI * 2); ctx.fill();
-    //     ctx.restore();
-
-    //     // Mountains
-    //     ctx.fillStyle = 'rgba(79, 111, 143, 0.6)'; ctx.beginPath(); ctx.arc(w*0.2, h+50, 150, 0, Math.PI*2); ctx.fill();
-    //     ctx.fillStyle = '#395b78'; ctx.beginPath(); ctx.arc(w*0.8, h+80, 200, 0, Math.PI*2); ctx.fill();
-    //     ctx.fillStyle = '#30475e'; ctx.beginPath(); ctx.arc(w*0.3, h+100, 180, 0, Math.PI*2); ctx.fill();
-        
-    //     // [修改] 调用新排版
-    //     this.drawTextGroup(ctx, w, h, text, author, 
-    //         '40px "Zhi Mang Xing", cursive', 
-    //         '34px "Zhi Mang Xing", cursive', // [变大]
-    //         '#e0e0e0', 
-    //         '#b0c4de',
-    //         50
-    //     );
-        
-    //     // 印章 (因为 drawTextGroup 已经画了作者，这里只是为了装饰画个章，可以稍微调整位置)
-    //     // 既然作者已经很大了，章可以画在更下面，或者省略。为了保持美观，这里稍微 hack 一下，不画章了，或者只画在右下角装饰。
-    //     // 之前章是跟在作者后面的，现在布局变了，为了简单起见，这里不再单独画章，以免重叠。
-    // }
-
-    // // --- 模板 3: 魔法车票 (Magic Ticket) ---
-    // static drawMagicStyle(ctx, w, h, text, author) {
-    //     // BG
-    //     const grad = ctx.createLinearGradient(0, 0, w, h);
-    //     grad.addColorStop(0, '#141E30'); grad.addColorStop(1, '#243B55');
-    //     ctx.fillStyle = grad; ctx.fillRect(0, 0, w, h);
-    //     ctx.strokeStyle = 'rgba(255,255,255,0.3)'; ctx.lineWidth = 2; ctx.setLineDash([10, 10]); ctx.strokeRect(15, 15, w-30, h-30); ctx.setLineDash([]);
-
-    //     // Sparkles
-    //     ctx.fillStyle = 'white';
-    //     for(let i=0; i<10; i++) {
-    //         const r = Math.random() * 2 + 1;
-    //         const x = Math.random() * w; const y = Math.random() * h;
-    //         ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI*2); ctx.fill();
-    //     }
-
-    //     // [修改] 调用新排版
-    //     this.drawTextGroup(ctx, w, h, text, author, 
-    //         'italic 36px "Playfair Display", serif', 
-    //         '30px "Cinzel Decorative", cursive', // [变大]
-    //         '#e0e0e0', 
-    //         '#a8c0ff', 
-    //         50
-    //     );
-    // }
-
-    // // --- 模板 6: 复古花园·午夜 (Dark Floral) ---
-    // static drawDarkFloralStyle(ctx, w, h, text, author) {
-    //     // BG
-    //     ctx.fillStyle = '#0f1a15'; ctx.fillRect(0, 0, w, h);
-    //     // Borders
-    //     ctx.strokeStyle = '#c0b283'; ctx.lineWidth = 6; ctx.strokeRect(10, 10, w-20, h-20);
-    //     ctx.strokeStyle = '#2c4c3b'; ctx.lineWidth = 2; ctx.strokeRect(20, 20, w-40, h-40);
-
-    //     // Flowers
-    //     const grad1 = ctx.createRadialGradient(0, 0, 5, 0, 0, 80);
-    //     grad1.addColorStop(0, 'rgba(75,0,130,0.6)'); grad1.addColorStop(1, 'transparent');
-    //     ctx.fillStyle = grad1; ctx.beginPath(); ctx.arc(0, 0, 80, 0, Math.PI*2); ctx.fill();
-        
-    //     const grad2 = ctx.createRadialGradient(w, h, 5, w, h, 80);
-    //     grad2.addColorStop(0, 'rgba(0,0,128,0.6)'); grad2.addColorStop(1, 'transparent');
-    //     ctx.fillStyle = grad2; ctx.beginPath(); ctx.arc(w, h, 80, 0, Math.PI*2); ctx.fill();
-
-    //     // 这里的中间背景块可能会遮挡居中的文字，我们把它画大一点并半透明，或者画在最底层
-    //     ctx.fillStyle = 'rgba(26, 38, 32, 0.8)'; // 半透明背景
-    //     ctx.fillRect(40, 40, w-80, h-80);
-
-    //     // [修改] 调用新排版
-    //     this.drawTextGroup(ctx, w, h, text, author, 
-    //         '40px "Great Vibes", cursive', 
-    //         '28px "Playfair Display", serif', // [变大]
-    //         '#f0e6d2', 
-    //         '#cccccc',
-    //         40
-    //     );
-    // }
 }

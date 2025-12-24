@@ -37,28 +37,39 @@ export class App {
             setTimeout(() => loader.remove(), 1000);
         }
         
-        // 2. 绑定开始按钮
-        const startBtn = document.getElementById('start-btn');
+        // 2. 弹窗逻辑
         const overlay = document.getElementById('instruction-overlay');
+        const step1 = document.getElementById('intro-step-1');
+        const step2 = document.getElementById('intro-step-2');
+        const howToBtn = document.getElementById('how-to-play-btn');
+        const startBtn = document.getElementById('start-btn');
         
-        if (startBtn && overlay) {
-            startBtn.addEventListener('click', () => {
-                overlay.style.opacity = 0;
-                overlay.style.pointerEvents = 'none';
-                setTimeout(() => overlay.remove(), 1500); 
-            });
+        if (overlay) {
+            // [新增] 点击 "HOW TO PLAY" -> 切换到说明界面
+            if (howToBtn) {
+                howToBtn.addEventListener('click', () => {
+                    step1.style.display = 'none'; // 隐藏祝福
+                    step2.style.display = 'block'; // 显示说明
+                    step2.classList.add('fade-in'); // 加个淡入动画
+                });
+            }
 
-            // 延迟浮现
+            // [原有] 点击 "START" -> 关闭整个弹窗
+            if (startBtn) {
+                startBtn.addEventListener('click', () => {
+                    overlay.style.opacity = 0;
+                    overlay.style.pointerEvents = 'none';
+                    setTimeout(() => overlay.remove(), 1500); 
+                });
+            }
+
+            // 延迟浮现弹窗 (Step 1)
             setTimeout(() => {
-                // [核心修复 2] 配合 display: none 使用
-                overlay.style.display = 'flex'; // 先把它摆出来
-                
-                // 强制浏览器重绘 (Reflow)，确保 opacity 动画能触发
+                overlay.style.display = 'flex'; 
                 void overlay.offsetWidth; 
-                
                 overlay.style.opacity = 1;
                 overlay.style.pointerEvents = 'auto';
-            }, 2500);
+            }, 3000);
         }
 
         STATE.isLoaded = true;

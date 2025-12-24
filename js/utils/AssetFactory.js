@@ -112,9 +112,9 @@ export class AssetFactory {
         return tex;
     }
 
-    // =========================================================
-    // 贺卡绘制工厂
-    // =========================================================
+    // // =========================================================
+    // // 贺卡绘制工厂
+    // // =========================================================
     static createCardTexture(text, author, styleIndex) {
         // 高清画布 (宽:高 = 4:2.6 => 约 1.5倍)
         const width = 800;
@@ -437,4 +437,197 @@ export class AssetFactory {
         ctx.fillStyle = '#888';
         ctx.fillText(author.toUpperCase(), w/2, h - 50);
     }
+
+    // // =========================================================
+    // // 贺卡绘制工厂
+    // // =========================================================
+    // static createCardTexture(text, author, styleIndex) {
+    //     const width = 800;
+    //     const height = 520; 
+    //     const canvas = document.createElement('canvas');
+    //     canvas.width = width;
+    //     canvas.height = height;
+    //     const ctx = canvas.getContext('2d');
+
+    //     // 根据索引选择模板 (你只用了4个，这里保持你的逻辑)
+    //     switch(styleIndex % 4) {
+    //         case 0: this.drawDecoStyle(ctx, width, height, text, author); break;
+    //         case 1: this.drawDarkScrollStyle(ctx, width, height, text, author); break; // Style 5
+    //         case 2: this.drawMagicStyle(ctx, width, height, text, author); break;
+    //         case 3: this.drawDarkFloralStyle(ctx, width, height, text, author); break; // Style 6
+    //     }
+
+    //     const tex = new THREE.CanvasTexture(canvas);
+    //     tex.colorSpace = THREE.SRGBColorSpace;
+    //     return tex;
+    // }
+
+    // // =========================================================
+    // // [核心新增] 通用文字排版方法：让正文和作者作为一个整体垂直居中
+    // // =========================================================
+    // static drawTextGroup(ctx, w, h, text, author, fontQuote, fontAuthor, colorQuote, colorAuthor, gap = 50) {
+    //     // 1. 预计算正文行数
+    //     ctx.font = fontQuote;
+    //     const maxWidth = w * 0.75; // 稍微宽一点
+    //     const lineHeight = parseInt(fontQuote) * 1.4;
+        
+    //     const words = text.split('');
+    //     let line = '';
+    //     const lines = [];
+    //     for(let n = 0; n < words.length; n++) {
+    //         const testLine = line + words[n];
+    //         if (ctx.measureText(testLine).width > maxWidth && n > 0) {
+    //             lines.push(line);
+    //             line = words[n];
+    //         } else {
+    //             line = testLine;
+    //         }
+    //     }
+    //     lines.push(line);
+        
+    //     // 2. 预计算总高度 (正文 + 间距 + 作者)
+    //     // 假设作者只有一行
+    //     const quoteHeight = lines.length * lineHeight;
+    //     const authorHeight = parseInt(fontAuthor) * 1.2;
+    //     const totalBlockHeight = quoteHeight + gap + authorHeight;
+
+    //     // 3. 计算起始 Y (让整个块垂直居中)
+    //     let currentY = (h - totalBlockHeight) / 2 + lineHeight/2; // 第一行的基线位置(大概)
+
+    //     // 4. 绘制正文
+    //     ctx.fillStyle = colorQuote;
+    //     ctx.font = fontQuote;
+    //     ctx.textAlign = 'center';
+    //     ctx.textBaseline = 'middle';
+        
+    //     // 如果需要阴影，需在外部设置，或者这里简单设置一下通用阴影
+    //     // ctx.shadowColor = 'rgba(0,0,0,0.3)'; ctx.shadowBlur = 4;
+
+    //     lines.forEach(l => {
+    //         ctx.fillText(l, w/2, currentY);
+    //         currentY += lineHeight;
+    //     });
+
+    //     // 5. 绘制作者 (紧跟正文下方)
+    //     // 回退半行高度因为循环里多加了一次，再加上 gap
+    //     currentY = currentY - lineHeight + gap; 
+        
+    //     ctx.fillStyle = colorAuthor;
+    //     ctx.font = fontAuthor;
+    //     ctx.fillText(`— ${author} —`, w/2, currentY);
+        
+    //     // 重置阴影
+    //     ctx.shadowBlur = 0;
+    // }
+
+    // // --- 模板 1: 奢华流金 (The Great Gatsby) ---
+    // static drawDecoStyle(ctx, w, h, text, author) {
+    //     // BG
+    //     ctx.fillStyle = '#0f1215'; ctx.fillRect(0, 0, w, h);
+    //     // Borders
+    //     ctx.strokeStyle = '#d4af37'; ctx.lineWidth = 4; ctx.strokeRect(20, 20, w-40, h-40);
+    //     ctx.strokeStyle = 'rgba(212, 175, 55, 0.5)'; ctx.lineWidth = 2; ctx.strokeRect(35, 35, w-70, h-70);
+    //     // Corners
+    //     ctx.fillStyle = '#d4af37'; const cSize = 60;
+    //     ctx.beginPath(); ctx.moveTo(20, 20); ctx.lineTo(20+cSize, 20); ctx.lineTo(20, 20+cSize); ctx.fill();
+    //     ctx.beginPath(); ctx.moveTo(w-20, 20); ctx.lineTo(w-20-cSize, 20); ctx.lineTo(w-20, 20+cSize); ctx.fill();
+    //     ctx.beginPath(); ctx.moveTo(w-20, h-20); ctx.lineTo(w-20-cSize, h-20); ctx.lineTo(w-20, h-20-cSize); ctx.fill();
+    //     ctx.beginPath(); ctx.moveTo(20, h-20); ctx.lineTo(20+cSize, h-20); ctx.lineTo(20, h-20-cSize); ctx.fill();
+
+    //     // [修改] 调用新排版
+    //     this.drawTextGroup(ctx, w, h, text, author, 
+    //         '36px "Cinzel Decorative", serif', // 正文
+    //         '30px "Cinzel", serif',            // [变大] 作者字号
+    //         '#f6e27a',                         // 正文色
+    //         '#b3a076',                         // 作者色
+    //         60                                 // 间距
+    //     );
+    // }
+
+    // // --- 模板 5: 远山淡影·月夜 (Dark Scroll + Moon) ---
+    // static drawDarkScrollStyle(ctx, w, h, text, author) {
+    //     // BG
+    //     ctx.fillStyle = '#222831'; ctx.fillRect(0, 0, w, h);
+
+    //     // Moon
+    //     ctx.save();
+    //     ctx.shadowColor = '#fdfbd3'; ctx.shadowBlur = 20; ctx.fillStyle = '#fdfbd3'; 
+    //     ctx.beginPath(); ctx.arc(w - 80, 80, 30, 0, Math.PI * 2); ctx.fill();
+    //     ctx.restore();
+
+    //     // Mountains
+    //     ctx.fillStyle = 'rgba(79, 111, 143, 0.6)'; ctx.beginPath(); ctx.arc(w*0.2, h+50, 150, 0, Math.PI*2); ctx.fill();
+    //     ctx.fillStyle = '#395b78'; ctx.beginPath(); ctx.arc(w*0.8, h+80, 200, 0, Math.PI*2); ctx.fill();
+    //     ctx.fillStyle = '#30475e'; ctx.beginPath(); ctx.arc(w*0.3, h+100, 180, 0, Math.PI*2); ctx.fill();
+        
+    //     // [修改] 调用新排版
+    //     this.drawTextGroup(ctx, w, h, text, author, 
+    //         '40px "Zhi Mang Xing", cursive', 
+    //         '34px "Zhi Mang Xing", cursive', // [变大]
+    //         '#e0e0e0', 
+    //         '#b0c4de',
+    //         50
+    //     );
+        
+    //     // 印章 (因为 drawTextGroup 已经画了作者，这里只是为了装饰画个章，可以稍微调整位置)
+    //     // 既然作者已经很大了，章可以画在更下面，或者省略。为了保持美观，这里稍微 hack 一下，不画章了，或者只画在右下角装饰。
+    //     // 之前章是跟在作者后面的，现在布局变了，为了简单起见，这里不再单独画章，以免重叠。
+    // }
+
+    // // --- 模板 3: 魔法车票 (Magic Ticket) ---
+    // static drawMagicStyle(ctx, w, h, text, author) {
+    //     // BG
+    //     const grad = ctx.createLinearGradient(0, 0, w, h);
+    //     grad.addColorStop(0, '#141E30'); grad.addColorStop(1, '#243B55');
+    //     ctx.fillStyle = grad; ctx.fillRect(0, 0, w, h);
+    //     ctx.strokeStyle = 'rgba(255,255,255,0.3)'; ctx.lineWidth = 2; ctx.setLineDash([10, 10]); ctx.strokeRect(15, 15, w-30, h-30); ctx.setLineDash([]);
+
+    //     // Sparkles
+    //     ctx.fillStyle = 'white';
+    //     for(let i=0; i<10; i++) {
+    //         const r = Math.random() * 2 + 1;
+    //         const x = Math.random() * w; const y = Math.random() * h;
+    //         ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI*2); ctx.fill();
+    //     }
+
+    //     // [修改] 调用新排版
+    //     this.drawTextGroup(ctx, w, h, text, author, 
+    //         'italic 36px "Playfair Display", serif', 
+    //         '30px "Cinzel Decorative", cursive', // [变大]
+    //         '#e0e0e0', 
+    //         '#a8c0ff', 
+    //         50
+    //     );
+    // }
+
+    // // --- 模板 6: 复古花园·午夜 (Dark Floral) ---
+    // static drawDarkFloralStyle(ctx, w, h, text, author) {
+    //     // BG
+    //     ctx.fillStyle = '#0f1a15'; ctx.fillRect(0, 0, w, h);
+    //     // Borders
+    //     ctx.strokeStyle = '#c0b283'; ctx.lineWidth = 6; ctx.strokeRect(10, 10, w-20, h-20);
+    //     ctx.strokeStyle = '#2c4c3b'; ctx.lineWidth = 2; ctx.strokeRect(20, 20, w-40, h-40);
+
+    //     // Flowers
+    //     const grad1 = ctx.createRadialGradient(0, 0, 5, 0, 0, 80);
+    //     grad1.addColorStop(0, 'rgba(75,0,130,0.6)'); grad1.addColorStop(1, 'transparent');
+    //     ctx.fillStyle = grad1; ctx.beginPath(); ctx.arc(0, 0, 80, 0, Math.PI*2); ctx.fill();
+        
+    //     const grad2 = ctx.createRadialGradient(w, h, 5, w, h, 80);
+    //     grad2.addColorStop(0, 'rgba(0,0,128,0.6)'); grad2.addColorStop(1, 'transparent');
+    //     ctx.fillStyle = grad2; ctx.beginPath(); ctx.arc(w, h, 80, 0, Math.PI*2); ctx.fill();
+
+    //     // 这里的中间背景块可能会遮挡居中的文字，我们把它画大一点并半透明，或者画在最底层
+    //     ctx.fillStyle = 'rgba(26, 38, 32, 0.8)'; // 半透明背景
+    //     ctx.fillRect(40, 40, w-80, h-80);
+
+    //     // [修改] 调用新排版
+    //     this.drawTextGroup(ctx, w, h, text, author, 
+    //         '40px "Great Vibes", cursive', 
+    //         '28px "Playfair Display", serif', // [变大]
+    //         '#f0e6d2', 
+    //         '#cccccc',
+    //         40
+    //     );
+    // }
 }

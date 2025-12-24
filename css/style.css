@@ -425,39 +425,54 @@ input:checked + .slider:before {
 }
 
 
-/* css/style.css 末尾新增 */
-
 /* === 移动端 UI 专属优化 === */
 @media (max-width: 600px) {
-    /* 1. 缩小底部控制栏整体 */
+    /* 1. 整体容器大幅下移 */
     .controls {
-        bottom: 30px; /* 稍微靠下一点 */
-        gap: 5px; /* 减小间距 */
+        bottom: 15px !important; /* 原来是 40px，现在贴底，留一点呼吸感即可 */
+        gap: 8px; /* 减小控件之间的垂直间距 */
     }
 
-    /* 2. 大幅缩小按钮尺寸 */
+    /* 2. 隐藏手机端无效的提示 (手机没有键盘H键) */
+    /* 这一步非常关键，隐藏它之后，按钮就能自然地坐下来了 */
+    .hint {
+        display: none !important; 
+    }
+
+    /* 3. 按钮极致瘦身 */
     .btn {
-        padding: 8px 16px !important; /* 减小内边距 */
-        font-size: 12px !important;   /* 减小字号 */
-        letter-spacing: 1px;
+        padding: 6px 16px !important; /* 上下压扁，左右收窄 */
+        font-size: 11px !important;   /* 字号调小 */
+        line-height: 1.2;             /* 防止行高撑大 */
+        letter-spacing: 1px;          /* 保持一点高级感 */
+        background: rgba(255, 255, 255, 0.08); /* 稍微调淡背景，显得更轻盈 */
     }
 
-    /* 3. 特别针对那个长文字的刷新按钮 */
+    /* 4. 针对刷新按钮的微调 */
     #refresh-btn {
-        font-size: 11px !important; 
-        padding: 6px 12px !important;
-        opacity: 0.8; /* 稍微透明一点，不抢视觉 */
+        width: auto; /* 防止它撑满屏幕 */
+        min-width: 120px;
     }
 
-    /* 4. 标题也稍微改小一点，避免遮挡树 */
+    /* 5. 标题也稍微改小并上移，避免遮挡树顶的星星 */
     h1 {
-        font-size: 36px !important;
-        top: 40px;
+        font-size: 32px !important;
+        top: 30px; /* 稍微往上提 */
     }
     
-    /* 5. 状态文字改小 */
+    /* 6. 状态文字改小 */
     .status-badge {
         font-size: 10px;
-        padding: 3px 10px;
+        padding: 2px 8px;
+        top: 15px;
+        right: 15px;
+    }
+    
+    /* 7. 开关控件也缩小一点 */
+    .switch {
+        transform: scale(0.8); /* 整体缩放开关 */
+    }
+    .switch-label {
+        font-size: 10px;
     }
 }
